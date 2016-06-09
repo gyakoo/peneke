@@ -19,10 +19,16 @@
   <ItemGroup>
     <Compile Include="engine.py" />
     <Compile Include="peneke.py" />
+    <Compile Include="pytmx\pytmx.py" />
+    <Compile Include="pytmx\util_pygame.py" />
+    <Compile Include="pytmx\util_pyglet.py" />
+    <Compile Include="pytmx\util_pysdl2.py" />
+    <Compile Include="pytmx\__init__.py" />
     <Content Include="data\keys.gif" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="data" />
+    <Folder Include="pytmx\" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\2.7" />

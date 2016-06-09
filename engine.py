@@ -1,14 +1,35 @@
-#Import Modules
+'''
+Copyright (c) 2016 gyakoo
+'''
 import os, pygame, copy
 import math, random
 from pygame.locals import *
 
-# --------------------------------------------------------
-'''Main Engine class'''
+if not pygame.font : print "Warning, pygame 'font' module disabled!"
+if not pygame.mixer: print "Warning, pygame 'sound' module disabled!"
+
+# -------------------------------------------------------
+def clamp(x,m,M):
+    '''Clamping a number between min m and max M'''
+    if   x < m : return m
+    elif x > M : return M
+    return x
+    
+# -------------------------------------------------------
+class Actor(object):
+    '''Base Actor class'''
+    def __init__(self,engine):
+        self.engine = engine
+    
+    def update(self, dt): None
+    def draw(self): None
+    def destroy(self): None
+    def mouseUp(self,p): None
 # --------------------------------------------------------
 class Engine:
-    '''Builds the Engine'''
+    '''Main Engine class'''
     def __init__(self,name,resolution):
+        '''Builds the Engine'''
         self.clock = pygame.time.Clock()
         self.SCREENRECT = Rect(0, 0, resolution[0], resolution[1])
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
@@ -17,14 +38,22 @@ class Engine:
         self.SCREEN = pygame.display.set_mode(self.SCREENRECT.size, pygame.DOUBLEBUF, bestdepth)
         self.name = name
         pygame.display.set_caption(name)
-        self.atfps, self.nextSound = 0.0, 0.0                
+        self.atfps, self.nextSound = 0.0, 0.0        
+        self.actors = []
+        self.showFPS = False
 
-    '''Deinit the engine'''
-    def destroy(self):
-        None
+    def addActor(self,a):
+        '''Registers an actor in the game. an actor must be subclass of Actor'''
+        self.actors.append(a)
 
-    '''Loads and caches a font handle'''
+    def destroy(self):        
+        '''Deinit the engine'''
+        for a in self.actors:
+            a.destroy()
+        self.actors = []
+
     def loadFont(self,fontname,size):
+        '''Loads and caches a font handle'''
         if not pygame.font: return None
         key = (fontname,size)
         font = None
@@ -36,8 +65,8 @@ class Engine:
             font = self.FONTCACHE[ key ]
         return font
         
-    '''Loads and caches a sound handle'''
     def loadSound(self,name):
+        '''Loads and caches a sound handle'''
         fullname = "data/"+name #os.path.join('data', name)
         sound = None
         if not self.SOUNDCACHE.has_key(name):            
@@ -51,8 +80,8 @@ class Engine:
             sound = self.SOUNDCACHE[name]
         return sound
     
-    '''Loads and caches an image handle'''
     def loadImage(self,file, rotation = 0, flipx = False, flipy = False):
+        '''Loads and caches an image handle'''
         key = (file, rotation, flipx, flipy)
         if not self.IMAGECACHE.has_key(key):
             path = "data/"+file #os.path.join('data', file)
@@ -72,23 +101,57 @@ class Engine:
             self.IMAGECACHE[key] = img
         return self.IMAGECACHE[key]
         
-    '''Plays a sound by name'''
     def playSound(self,name,vol=1.0):
+        '''Plays a sound by name'''
         if self.nextSound <= 0.0: # avoiding two very consecutive sounds
             sound = self.loadSound(name)
             sound.set_volume(vol)
             sound.play()
             self.nextSound = 0.1
 
-    '''Draws and flip buffers'''
-    def draw(self):                
+    def draw(self):
+        '''Draws and flip buffers'''
+        for a in self.actors:
+            a.draw()        
         pygame.display.flip()
                    
-    '''Updates the engine state'''
     def update(self,dt):
+        '''Updates the engine state'''
         # Update fps stats
-        self.atfps += dt
-        self.nextSound -= dt
-        if self.atfps > 3.0:
-            pygame.display.set_caption(self.name + " fps: " + str(int(self.clock.get_fps())))
-            self.atfps = 0.0        
+        if self.showFPS:
+            self.atfps += dt
+            if self.atfps > 3.0:
+                pygame.display.set_caption(self.name + " fps: " + str(int(self.clock.get_fps())))
+                self.atfps -= 3.0
+        # update sound timer and actors
+        self.nextSound -= dt             
+        for a in self.actors:
+            a.update(dt)
+
+    def run(self):
+        '''Main Loop'''
+        nextkey = 0.0
+        finished = False
+        while not finished:
+            # Clock
+            self.clock.tick(60)
+            dt = self.clock.get_time()/1000.0
+        
+            # Input
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    finished = True
+                    break
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    for a in self.actors: 
+                        a.mouseUp(pygame.mouse.get_pos())
+                        
+            self.KEYPRESSED = pygame.key.get_pressed()
+            finished = finished or self.KEYPRESSED[K_ESCAPE]
+            nextkey -= dt
+        
+            # Update
+            self.update(dt)
+
+            # Draw
+            self.draw()

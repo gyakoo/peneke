@@ -10,12 +10,31 @@ from pytmx.util_pygame import *
 
 
 class Scene(engine.Actor):
-    def __init__(self,engine):
+    def __init__(self,tmxfile,engine):
         super(Scene,self).__init__(engine)
-        self.tile_map = load_pygame("data/test01.tmx")
-    
+        self.tile_map = load_pygame(tmxfile)
+        self.offset = (0,0)
+
     def draw(self):
-        surf = self.tile_map.get_tile_image(0,0,0)
+        self.drawLayers(range(0,3))
+
+    def drawLayers(self,lrang):
+        tw, th = self.tile_map.tilewidth, self.tile_map.tileheight
+        ox, oy = self.offset
+        r = Rect( ox, oy, tw, th )        
+        images = self.tile_map.images
+        for l in lrang:
+            layer = self.tile_map.layers[l] 
+            r.y = oy
+            for row in layer.data:
+                r.x = ox
+                for gid in row: 
+                    r.x += tw
+                    if gid:
+                        self.engine.SCREEN.blit(images[gid], r)
+                r.y += th
+        
+                
 
 # --------------------------------------------------------
 class Player(engine.Actor):
@@ -36,8 +55,9 @@ if __name__ == '__main__':
     # Initialize engine and actors
     pygame.init()
     eng = engine.Engine( "Peneke", (640,480) )
+    eng.showFPS = True
     eng.addActor( Player(eng) )
-    eng.addActor( Scene(eng) )
+    eng.addActor( Scene("data/test01.tmx",eng) )
     #pygame.mouse.set_visible(0)
 
     # Main loop

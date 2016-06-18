@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     ENG.addActor( Player(ENG) )
     ENG.addActor( Scene("data/test01.tmx",ENG) )
-    engine.BhFactory.createText("peneke",(20,300))
+    engine.BEHAVIORS.createText("peneke",(20,300))
     #pygame.mouse.set_visible(0)
 
     # Main loop

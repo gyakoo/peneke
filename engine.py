@@ -5,16 +5,8 @@ import os, pygame, copy
 import math, random
 from pygame.locals import *
 
-if not pygame.font : print "Warning, pygame 'font' module disabled!"
-if not pygame.mixer: print "Warning, pygame 'sound' module disabled!"
-
-# -------------------------------------------------------
-def clamp(x,m,M):
-    '''Clamping a number between min m and max M'''
-    if   x < m : return m
-    elif x > M : return M
-    return x
-    
+assert pygame.font
+assert pygame.mixer
 
 # -------------------------------------------------------
 class Behavior(object):
@@ -56,13 +48,27 @@ class Actor(object):
         self.behaviors = []
     def mouseUp(self,p): None
 
+#----------------------------------------------------------------------
+class MATH:
+    EASE_LINEAR = 0
+    
+    @staticmethod
+    def easeCompute(): 
+        return 1.0
+
+    @staticmethod
+    def clamp(x,m,M):
+        if   x < m : return m
+        elif x > M : return M
+        return x
+
 # --------------------------------------------------------
 class Engine:
     '''Main Engine class'''
     def __init__(self,name,resolution):
         '''Builds the Engine'''
         pygame.init()
-        BhFactory.engine = self
+        BEHAVIORS.engine = self
         self.clock = pygame.time.Clock()
         self.SCREENRECT = Rect(0, 0, resolution[0], resolution[1])
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
@@ -184,7 +190,7 @@ class Engine:
         while self.running:
             # Clock
             self.clock.tick(60)
-            dt = self.clock.get_time()/1000.0
+            dt = 1.0/60.0#self.clock.get_time()/1000.0
         
             # Input
             for event in pygame.event.get():
@@ -265,9 +271,9 @@ class BhText(Behavior):
             self.actor.rect.size = self.actor.img.get_rect().size
 
 #----------------------------------------------------------------------
-class BhDestroy(Behavior):
+class BhDestroyActor(Behavior):
     def __init__(self,actor,timeSec=0.0):
-        super(BhDestroy,self).__init__(actor)
+        super(BhDestroyActor,self).__init__(actor)
         self.time = timeSec
 
     def update(self,dt):
@@ -280,14 +286,87 @@ class BhSequence(Behavior):
     None
 
 #----------------------------------------------------------------------
-class BhFactory:
+class BhDestroyBehavior(Behavior):
+    def __init__(self,behavior,timeSec=0.0):
+        assert behavior
+        self.innerBehavior = behavior
+        super(BhDestroyBehavior,self).__init__(behavior.actor)
+        self.time = timeSec
+
+    def update(self,dt):
+        self.time -= dt
+        if self.time > 0.0:
+            self.innerBehavior.update(dt)
+        else:
+            self.markForDestroy = True
+
+    def draw(self): self.innerBehavior.draw()
+    def destroy(self): self.innerBehavior.destroy()
+            
+#----------------------------------------------------------------------
+class BhSequence(Behavior):
+    def __init__(self,actor,seq):
+        assert seq
+        super(BhSequence,self).__init__(actor)
+        self.sequence = seq
+        self.index = 0
+       
+    def update(self,dt):
+        if self.index < len(self.sequence):
+            b = self.sequence[self.index]
+            b.update(dt)
+            if b.markForDestroy:
+                self.index += 1
+        if self.index >= len(self.sequence):
+            self.markForDestroy = True
+
+    def draw(self):
+        if self.index < len(self.sequence):
+            self.sequence[self.index].draw()
+
+    def destroy(self):
+        if self.index < len(self.sequence):
+            for i in range(self.index,len(self.sequence)):
+                self.sequence[i].destroy()
+
+#----------------------------------------------------------------------
+class BhMoveTo(Behavior):
+    def __init__(self,actor,targetTopLeft,timeSec,easeType=MATH.EASE_LINEAR):
+        super(BhMoveTo,self).__init__(actor)
+        self.targetTopLeft = targetTopLeft
+        self.easeType = easeType
+        self.timeSec = timeSec
+        self.time = timeSec
+        self.dirx, self.diry = None, None
+        self.srcTL = None
+
+    def update(self,dt):
+        if self.time <= 0.0:
+            self.actor.rect.topleft = self.targetTopLeft
+            self.markForDestroy=True
+        else:
+            if not self.dirx:
+                self.srcTL = self.actor.rect.topleft
+                self.dirx = self.targetTopLeft[0]-self.srcTL[0]
+                self.diry = self.targetTopLeft[1]-self.srcTL[1]
+            t = 1.0 - self.time / self.timeSec
+            x,y = self.srcTL
+            x += t * self.dirx
+            y += t * self.diry
+            self.actor.rect.topleft = (x,y)
+            self.time -= dt
+
+#----------------------------------------------------------------------
+class BEHAVIORS:
     engine = None
 
     @staticmethod
     def createText(text,topleft,fontname="type_writer.ttf",size=14):
-        assert BhFactory.engine
-        a = Actor(BhFactory.engine)
+        assert BEHAVIORS.engine
+        a = Actor(BEHAVIORS.engine)
         a.addBehavior(BhBlit(a))
         a.addBehavior(BhText(a,text,topleft,fontname,size))
-        a.addBehavior(BhDestroy(a,5.0))
-        BhFactory.engine.addActor(a)
+        a.addBehavior(BhSequence(a,
+          [BhMoveTo(a,(100,200),3.0), BhMoveTo(a,(100,300),3.0), BhDestroyActor(a,3)]))
+        BEHAVIORS.engine.addActor(a)
+

@@ -46,22 +46,21 @@ class Player(engine.Actor):
     def draw(self):
         None
 
-
 # --------------------------------------------------------
 # Entry point, only when executed, not imported
 # --------------------------------------------------------
 if __name__ == '__main__':
     # Initialize engine and actors
-    pygame.init()
-    eng = engine.Engine( "Peneke", (640,480) )
-    eng.showFPS = True
-    eng.addActor( Player(eng) )
-    eng.addActor( Scene("data/test01.tmx",eng) )
+    ENG = engine.Engine( "Peneke", (640,480) )
+    ENG.showFPS = True
+
+    ENG.addActor( Player(ENG) )
+    ENG.addActor( Scene("data/test01.tmx",ENG) )
+    engine.BhFactory.createText("peneke",(20,300))
     #pygame.mouse.set_visible(0)
 
     # Main loop
-    eng.run()
+    ENG.run()
 
     # Finishing 
-    eng.destroy()
-    pygame.quit()    
+    ENG.destroy()

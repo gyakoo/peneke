@@ -15,22 +15,54 @@ def clamp(x,m,M):
     elif x > M : return M
     return x
     
+
+# -------------------------------------------------------
+class Behavior(object):
+    def __init__(self,actor):
+        self.actor = actor
+        self.markForDestroy = False
+    
+    def update(self,dt): None
+    def draw(self): None
+    def destroy(self): None
+
 # -------------------------------------------------------
 class Actor(object):
     '''Base Actor class'''
     def __init__(self,engine):
         self.engine = engine
-        self.markForRemove = False
+        self.markForDestroy = False
+        self.behaviors = []
+        self.img = None
+        self.rect = None
+        self.color = None
+        self.imgIndex = -1
 
-    def update(self, dt): None
-    def draw(self): None
-    def destroy(self): None
+    def addBehavior(self,b):
+        self.behaviors.append(b)
+    def update(self, dt):
+        toDestroy = []
+        for b in self.behaviors: 
+            b.update(dt)
+            if b.markForDestroy:
+                b.destroy()
+                toDestroy.append(b)
+        for b in toDestroy:
+            self.behaviors.remove(b)
+    def draw(self):        
+        for b in self.behaviors: b.draw()
+    def destroy(self): 
+        for b in self.behaviors: b.destroy()
+        self.behaviors = []
     def mouseUp(self,p): None
+
 # --------------------------------------------------------
 class Engine:
     '''Main Engine class'''
     def __init__(self,name,resolution):
         '''Builds the Engine'''
+        pygame.init()
+        BhFactory.engine = self
         self.clock = pygame.time.Clock()
         self.SCREENRECT = Rect(0, 0, resolution[0], resolution[1])
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
@@ -40,9 +72,13 @@ class Engine:
         self.name = name
         pygame.display.set_caption(name)
         self.atfps, self.nextSound = 0.0, 0.0        
-        self.actors, self.actorsToRemove = [], []
+        self.actors, self.actorsToDestroy = [], []
         self.showFPS = False
         self.running = True
+        self.pathToFonts = "data/fonts/"
+        self.pathToSounds= "data/sounds/"
+        self.pathToImages= "data/images/"
+        self.imageExtensions = ["", ".png", ".bmp", ".gif"]
 
     def addActor(self,a):
         '''Registers an actor in the game. an actor must be subclass of Actor'''
@@ -53,27 +89,32 @@ class Engine:
         for a in self.actors:
             a.destroy()
         self.actors = []
+        pygame.quit()    
 
     def loadFont(self,fontname,size):
         '''Loads and caches a font handle'''
-        if not pygame.font: return None
+        assert pygame.font
         key = (fontname,size)
         font = None
         if not self.FONTCACHE.has_key(key):
-            path = "data/"+fontname
+            path = self.pathToFonts+fontname
             font = pygame.font.Font(path, size)
+            assert font
             if font: self.FONTCACHE[key] = font
         else:
-            font = self.FONTCACHE[ key ]
+            font = self.FONTCACHE[key]
         return font
         
     def loadSound(self,name):
         '''Loads and caches a sound handle'''
-        fullname = "data/"+name #os.path.join('data', name)
+        fullname = self.pathToSounds+name
         sound = None
         if not self.SOUNDCACHE.has_key(name):            
-            try: 
-                sound = pygame.mixer.Sound(fullname+".wav")
+            try:
+                s = ""
+                if not fullname.endsWith(".wav"):
+                    fullname = fullname + ".wav"
+                sound = pygame.mixer.Sound(fullname)
             except pygame.error, message:
                 print 'Cannot load sound:', name
             if sound:
@@ -86,9 +127,8 @@ class Engine:
         '''Loads and caches an image handle'''
         key = (file, rotation, flipx, flipy)
         if not self.IMAGECACHE.has_key(key):
-            path = "data/"+file #os.path.join('data', file)
-            ext = ["", ".png", ".bmp", ".gif"]
-            for e in ext:
+            path = self.pathToImages+file #os.path.join('data', file)            
+            for e in self.imageExtensions:
                 if os.path.exists(path + e):
                     path = path + e
                     break
@@ -113,6 +153,7 @@ class Engine:
 
     def draw(self):
         '''Draws and flip buffers'''
+        self.SCREEN.fill((0,0,0))
         for a in self.actors:
             a.draw()        
         pygame.display.flip()
@@ -127,12 +168,13 @@ class Engine:
                 self.atfps -= 3.0
         # update sound timer and actors
         self.nextSound -= dt     
-        self.actorsToRemove=[]        
+        self.actorsToDestroy=[]        
         for a in self.actors:
             a.update(dt)
-            if a.markForRemove:
-                self.actorsToRemove.append(a)
-        for atr in self.actorsToRemove:
+            if a.markForDestroy:
+                a.destroy()
+                self.actorsToDestroy.append(a)
+        for atr in self.actorsToDestroy:
             self.actors.remove(atr)
             
     def run(self):
@@ -147,60 +189,105 @@ class Engine:
             # Input
             for event in pygame.event.get():
                 if event.type == QUIT:
-                    finished = True
-                    break
+                    return
                 elif event.type == pygame.MOUSEBUTTONUP:
                     for a in self.actors: 
                         a.mouseUp(pygame.mouse.get_pos())
                         
             self.KEYPRESSED = pygame.key.get_pressed()
-            self.running = self.running or self.KEYPRESSED[K_ESCAPE]
+            if self.KEYPRESSED[K_ESCAPE]: break
             nextkey -= dt
-        
-            # Update
             self.update(dt)
-
-            # Draw
             self.draw()
 
 #-----------------------------------------------------------
-class AcEase(Actor):
-    LINEAR=0
-    def __init__(self, engine, time, val, easeType=AcEase.LINEAR):
-        assert time >= 0.0
-        super(AcEase,self).__init__(engine)
-        self.startValue, self.startTime = val, time
-        self.value, self.time = val, time
-        self.easeType = easeType
+class BhBlit(Behavior):
+    def __init__(self,actor):
+        super(BhBlit,self).__init__(actor)
+
+    def draw(self):
+        img = self.actor.img
+        r = self.actor.rect
+        e = self.actor.engine
+        ii = self.actor.imgIndex
+        if not img or not r: return
+        if isinstance(img,list):
+            if isinstance(r,list):
+                if ii < 0:
+                    for i in range(0,len(img)):
+                        e.SCREEN.blit( img[i], r[i] )
+                else:
+                    e.SCREEN.blit( img[ii], r[ii] )
+            else:
+                if ii < 0:
+                    for i in range(0,len(img)):
+                        e.SCREEN.blit( img[i], r )
+                else:
+                    e.SCREEN.blit(img[ii],r)
+        else: # IMG single
+            if isinstance(r,list):
+                if ii < 0 :
+                    for i in range(0,len(r)):
+                        e.SCREEN.blit( img, r[i])
+                else:
+                    e.SCREEN.blit(img,r[ii])
+            else:
+                e.SCREEN.blit(img,r)
 
 #-----------------------------------------------------------
-class AcEaseOut(AcEase):
-    def __init__(self, engine, timeOut, startValue, easeType=AcEase.LINEAR):
-        assert startValue >= 0.0
-        super(AcEaseOut,self).__init__(engine, timeOut, startValue, easeType)
-        
-    def update(self,dt):
-        if self.time <= 0.0:
-            self.markForRemove = True
-            return        
-        self.time -= dt
-        if self.time <= 0.0:
-            self.value = 0.0
-        elif self.easeType == AcEase.LINEAR:
-            self.value = self.startTime/self.time * self.startValue
+class BhText(Behavior):
+    def __init__(self,actor,text,topleft,font="type_writer.ttf",size=14):
+        assert text
+        super(BhText,self).__init__(actor)
+        self.text = ""        
+        self.actor.color = (255,255,255)
+        self.actor.rect = Rect(topleft,(0,0))
+        self.setFont(font,size)
+        self.setText(text)
 
-#-----------------------------------------------------------
-class AcEaseIn(AcEase):
-    def __init__(self, engine, timeIn, endValue, easeType=AcEase.LINEAR):
-        assert endValue >= 0.0
-        super(AcEaseIn,self).__init__(engine, timeIn, endValue, easeType)
-        
+    def setFont(self,fontName,size):
+        self.font = self.actor.engine.loadFont(fontName,size)
+        if self.text:
+            self.setText(self.text)
+
+    def setColor(self,color):
+        if color != self.actor.color:
+            self.actor.color = color
+            self.setText(self.text)
+
+    def setTopLeft(self,topleft):
+        self.actor.rect.topleft = topleft
+
+    def setText(self,text):
+        assert self.font
+        if self.text != text:
+            self.actor.img = self.font.render(text,False,self.actor.color)
+            self.actor.rect.size = self.actor.img.get_rect().size
+
+#----------------------------------------------------------------------
+class BhDestroy(Behavior):
+    def __init__(self,actor,timeSec=0.0):
+        super(BhDestroy,self).__init__(actor)
+        self.time = timeSec
+
     def update(self,dt):
-        if self.time <= 0.0:
-            self.markForRemove = True
-            return        
         self.time -= dt
         if self.time <= 0.0:
-            self.value = 0.0
-        elif self.easeType == AcEase.LINEAR:
-            self.value = (1.0-self.startTime/self.time) * self.startValue
+            self.actor.markForDestroy = True
+
+
+class BhSequence(Behavior):
+    None
+
+#----------------------------------------------------------------------
+class BhFactory:
+    engine = None
+
+    @staticmethod
+    def createText(text,topleft,fontname="type_writer.ttf",size=14):
+        assert BhFactory.engine
+        a = Actor(BhFactory.engine)
+        a.addBehavior(BhBlit(a))
+        a.addBehavior(BhText(a,text,topleft,fontname,size))
+        a.addBehavior(BhDestroy(a,5.0))
+        BhFactory.engine.addActor(a)

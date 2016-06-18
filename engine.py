@@ -20,7 +20,8 @@ class Actor(object):
     '''Base Actor class'''
     def __init__(self,engine):
         self.engine = engine
-    
+        self.markForRemove = False
+
     def update(self, dt): None
     def draw(self): None
     def destroy(self): None
@@ -39,8 +40,9 @@ class Engine:
         self.name = name
         pygame.display.set_caption(name)
         self.atfps, self.nextSound = 0.0, 0.0        
-        self.actors = []
+        self.actors, self.actorsToRemove = [], []
         self.showFPS = False
+        self.running = True
 
     def addActor(self,a):
         '''Registers an actor in the game. an actor must be subclass of Actor'''
@@ -124,15 +126,20 @@ class Engine:
                 pygame.display.set_caption(self.name + " fps: " + str(int(self.clock.get_fps())))
                 self.atfps -= 3.0
         # update sound timer and actors
-        self.nextSound -= dt             
+        self.nextSound -= dt     
+        self.actorsToRemove=[]        
         for a in self.actors:
             a.update(dt)
-
+            if a.markForRemove:
+                self.actorsToRemove.append(a)
+        for atr in self.actorsToRemove:
+            self.actors.remove(atr)
+            
     def run(self):
         '''Main Loop'''
         nextkey = 0.0
-        finished = False
-        while not finished:
+        self.running = True
+        while self.running:
             # Clock
             self.clock.tick(60)
             dt = self.clock.get_time()/1000.0
@@ -147,7 +154,7 @@ class Engine:
                         a.mouseUp(pygame.mouse.get_pos())
                         
             self.KEYPRESSED = pygame.key.get_pressed()
-            finished = finished or self.KEYPRESSED[K_ESCAPE]
+            self.running = self.running or self.KEYPRESSED[K_ESCAPE]
             nextkey -= dt
         
             # Update
@@ -155,3 +162,45 @@ class Engine:
 
             # Draw
             self.draw()
+
+#-----------------------------------------------------------
+class AcEase(Actor):
+    LINEAR=0
+    def __init__(self, engine, time, val, easeType=AcEase.LINEAR):
+        assert time >= 0.0
+        super(AcEase,self).__init__(engine)
+        self.startValue, self.startTime = val, time
+        self.value, self.time = val, time
+        self.easeType = easeType
+
+#-----------------------------------------------------------
+class AcEaseOut(AcEase):
+    def __init__(self, engine, timeOut, startValue, easeType=AcEase.LINEAR):
+        assert startValue >= 0.0
+        super(AcEaseOut,self).__init__(engine, timeOut, startValue, easeType)
+        
+    def update(self,dt):
+        if self.time <= 0.0:
+            self.markForRemove = True
+            return        
+        self.time -= dt
+        if self.time <= 0.0:
+            self.value = 0.0
+        elif self.easeType == AcEase.LINEAR:
+            self.value = self.startTime/self.time * self.startValue
+
+#-----------------------------------------------------------
+class AcEaseIn(AcEase):
+    def __init__(self, engine, timeIn, endValue, easeType=AcEase.LINEAR):
+        assert endValue >= 0.0
+        super(AcEaseIn,self).__init__(engine, timeIn, endValue, easeType)
+        
+    def update(self,dt):
+        if self.time <= 0.0:
+            self.markForRemove = True
+            return        
+        self.time -= dt
+        if self.time <= 0.0:
+            self.value = 0.0
+        elif self.easeType == AcEase.LINEAR:
+            self.value = (1.0-self.startTime/self.time) * self.startValue

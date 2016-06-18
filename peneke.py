@@ -9,6 +9,7 @@ import pytmx
 from pytmx.util_pygame import *
 
 
+# --------------------------------------------------------
 class Scene(engine.Actor):
     def __init__(self,tmxfile,engine):
         super(Scene,self).__init__(engine)
@@ -16,7 +17,7 @@ class Scene(engine.Actor):
         self.offset = (0,0)
 
     def draw(self):
-        self.drawLayers(range(0,3))
+        self.drawLayers(range(0,3)) 
 
     def drawLayers(self,lrang):
         tw, th = self.tile_map.tilewidth, self.tile_map.tileheight
@@ -34,8 +35,6 @@ class Scene(engine.Actor):
                         self.engine.SCREEN.blit(images[gid], r)
                 r.y += th
         
-                
-
 # --------------------------------------------------------
 class Player(engine.Actor):
     def __init__(self,engine):

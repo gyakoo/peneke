@@ -41,14 +41,19 @@ class Player(engine.Actor):
         super(Player,self).__init__(engine)
         self.f = self.engine.loadFont("type_writer.ttf", 14)
         self.a = self.f.render("hello world!", False, (200,0,100,255))
+        self.alpha = 255
 
     def mouseUp(self,pos):
         None
+    def update(self,dt):
+        self.alpha -= 100.0*dt
+        if self.alpha < 0.0: 
+            self.alpha = 255
 
     def draw(self):
         r = self.a.get_rect()
         r.topleft = (400,200)
-        engine.HELPER.blit_alpha(self.engine.SCREEN,self.a,(40,200),55)
+        engine.HELPER.blitAlpha(self.engine.SCREEN,self.a,(40,20),int(self.alpha))
 
 # --------------------------------------------------------
 # Entry point, only when executed, not imported
@@ -58,8 +63,8 @@ if __name__ == '__main__':
     ENG = engine.Engine( "Peneke", (640,480) )
     ENG.showFPS = True
 
-    ENG.addActor( Player(ENG) )
     ENG.addActor( Scene("data/test01.tmx",ENG) )
+    ENG.addActor( Player(ENG) )
     engine.BEHAVIORS.createText("peneke",(20,300))
     #pygame.mouse.set_visible(0)
 

@@ -63,9 +63,10 @@ class HELPER:
         return x
 
     @staticmethod
-    def blit_alpha(target, source, location, opacity):
+    def blitAlpha(target, source, location, opacity):
         x, y = location
-        temp = pygame.Surface((source.get_width(), source.get_height())).convert()
+        size = (source.get_width(), source.get_height())
+        temp = Engine.singleton.getScratchSurf(size)
         temp.blit(target, (-x, -y))
         temp.blit(source, (0, 0))
         temp.set_alpha(opacity)        
@@ -73,6 +74,8 @@ class HELPER:
 
 # --------------------------------------------------------
 class Engine:
+    singleton = None
+
     '''Main Engine class'''
     def __init__(self,name,resolution):
         '''Builds the Engine'''
@@ -81,6 +84,7 @@ class Engine:
         self.clock = pygame.time.Clock()
         self.SCREENRECT = Rect(0, 0, resolution[0], resolution[1])
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
+        self.SCRATCHSURFCACHE = {}
         self.KEYPRESSED = None
         bestdepth = pygame.display.mode_ok(self.SCREENRECT.size, pygame.DOUBLEBUF, 32)
         self.SCREEN = pygame.display.set_mode(self.SCREENRECT.size, pygame.DOUBLEBUF, bestdepth)
@@ -94,6 +98,7 @@ class Engine:
         self.pathToSounds= "data/sounds/"
         self.pathToImages= "data/images/"
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
+        Engine.singleton = self
 
     def addActor(self,a):
         '''Registers an actor in the game. an actor must be subclass of Actor'''
@@ -137,6 +142,15 @@ class Engine:
         else:
             sound = self.SOUNDCACHE[name]
         return sound
+
+    def getScratchSurf(self,dim):
+        ss = None
+        if not self.SCRATCHSURFCACHE.has_key(dim):
+            ss = pygame.Surface(dim).convert()
+            self.SCRATCHSURFCACHE[dim] = ss
+        else:
+            ss = self.SCRATCHSURFCACHE[dim]
+        return ss
     
     def loadImage(self,file, rotation = 0, flipx = False, flipy = False):
         '''Loads and caches an image handle'''

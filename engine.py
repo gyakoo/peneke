@@ -49,7 +49,7 @@ class Actor(object):
     def mouseUp(self,p): None
 
 #----------------------------------------------------------------------
-class MATH:
+class HELPER:
     EASE_LINEAR = 0
     
     @staticmethod
@@ -61,6 +61,15 @@ class MATH:
         if   x < m : return m
         elif x > M : return M
         return x
+
+    @staticmethod
+    def blit_alpha(target, source, location, opacity):
+        x, y = location
+        temp = pygame.Surface((source.get_width(), source.get_height())).convert()
+        temp.blit(target, (-x, -y))
+        temp.blit(source, (0, 0))
+        temp.set_alpha(opacity)        
+        target.blit(temp, location)
 
 # --------------------------------------------------------
 class Engine:
@@ -330,8 +339,18 @@ class BhSequence(Behavior):
                 self.sequence[i].destroy()
 
 #----------------------------------------------------------------------
+class BhWaitForTime(Behavior):
+    def __init__(self,actor,timeInSec):
+        super(BhWaitForTime,self).__init__(actor)
+        self.time = timeInSec
+
+    def update(self,dt):
+        if self.time <= 0.0: self.markForDestroy = True
+        else: self.time -= dt
+
+#----------------------------------------------------------------------
 class BhMoveTo(Behavior):
-    def __init__(self,actor,targetTopLeft,timeSec,easeType=MATH.EASE_LINEAR):
+    def __init__(self,actor,targetTopLeft,timeSec,easeType=HELPER.EASE_LINEAR):
         super(BhMoveTo,self).__init__(actor)
         self.targetTopLeft = targetTopLeft
         self.easeType = easeType
@@ -345,7 +364,7 @@ class BhMoveTo(Behavior):
             self.actor.rect.topleft = self.targetTopLeft
             self.markForDestroy=True
         else:
-            if not self.dirx:
+            if self.dirx == None:
                 self.srcTL = self.actor.rect.topleft
                 self.dirx = self.targetTopLeft[0]-self.srcTL[0]
                 self.diry = self.targetTopLeft[1]-self.srcTL[1]
@@ -367,6 +386,8 @@ class BEHAVIORS:
         a.addBehavior(BhBlit(a))
         a.addBehavior(BhText(a,text,topleft,fontname,size))
         a.addBehavior(BhSequence(a,
-          [BhMoveTo(a,(100,200),3.0), BhMoveTo(a,(100,300),3.0), BhDestroyActor(a,3)]))
+          [BhMoveTo(a,(100,200),3.0), 
+           BhMoveTo(a,(100,300),3.0), 
+           BhDestroyActor(a,3)]))
         BEHAVIORS.engine.addActor(a)
 

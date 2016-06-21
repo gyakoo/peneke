@@ -39,12 +39,16 @@ class Scene(engine.Actor):
 class Player(engine.Actor):
     def __init__(self,engine):
         super(Player,self).__init__(engine)
+        self.f = self.engine.loadFont("type_writer.ttf", 14)
+        self.a = self.f.render("hello world!", False, (200,0,100,255))
 
     def mouseUp(self,pos):
         None
 
     def draw(self):
-        None
+        r = self.a.get_rect()
+        r.topleft = (400,200)
+        engine.HELPER.blit_alpha(self.engine.SCREEN,self.a,(40,200),55)
 
 # --------------------------------------------------------
 # Entry point, only when executed, not imported

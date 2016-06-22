@@ -26,9 +26,10 @@ class Actor(object):
         self.markForDestroy = False
         self.behaviors = []
         self.img = None
-        self.rect = None
-        self.color = None
+        self.rect, self.area = None, None
+        self.alpha = 255
         self.imgIndex = -1
+        self.areaIndex = -1
 
     def addBehavior(self,b):
         self.behaviors.append(b)
@@ -63,15 +64,14 @@ class HELPER:
         return x
 
     @staticmethod
-    def blitAlpha(target, source, location, opacity):
+    def blitAlpha(target, source, location, opacity, area=None):
         x, y = location
         size = (source.get_width(), source.get_height())
         temp = Engine.singleton.getScratchSurf(size)
         temp.blit(target, (-x, -y))
-        temp.blit(source, (0, 0))
+        temp.blit(source, (0, 0), area)
         temp.set_alpha(opacity)        
         target.blit(temp, location)
-
 # --------------------------------------------------------
 class Engine:
     singleton = None
@@ -235,33 +235,44 @@ class BhBlit(Behavior):
         super(BhBlit,self).__init__(actor)
 
     def draw(self):
+        if self.actor.alpha==255:
+            self.drawOpaque()
+        else:
+            self.drawAlpha()
+
+    def drawAlpha(self):
+        None
+
+    def drawOpaque(self):
         img = self.actor.img
         r = self.actor.rect
-        e = self.actor.engine
-        ii = self.actor.imgIndex
+        ai = self.actor.areaIndex
+        srcRect = self.actor.area if ai==-1 else self.actor.area[ai]
         if not img or not r: return
+        SCR = self.actor.engine.SCREEN
+        ii = self.actor.imgIndex
         if isinstance(img,list):
             if isinstance(r,list):
                 if ii < 0:
                     for i in range(0,len(img)):
-                        e.SCREEN.blit( img[i], r[i] )
+                        SCR.blit( img[i], r[i], srcRect )
                 else:
-                    e.SCREEN.blit( img[ii], r[ii] )
+                    SCR.blit( img[ii], r[ii], srcRect )
             else:
                 if ii < 0:
                     for i in range(0,len(img)):
-                        e.SCREEN.blit( img[i], r )
+                        SCR.blit( img[i], r, srcRect )
                 else:
-                    e.SCREEN.blit(img[ii],r)
+                    SCR.blit(img[ii],r)
         else: # IMG single
             if isinstance(r,list):
                 if ii < 0 :
                     for i in range(0,len(r)):
-                        e.SCREEN.blit( img, r[i])
+                        SCR.blit( img, r[i], srcRect )
                 else:
-                    e.SCREEN.blit(img,r[ii])
+                    SCR.blit(img,r[ii], srcRect)
             else:
-                e.SCREEN.blit(img,r)
+                SCR.blit(img,r, srcRect)
 
 #-----------------------------------------------------------
 class BhText(Behavior):

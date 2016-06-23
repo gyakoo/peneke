@@ -234,45 +234,45 @@ class BhBlit(Behavior):
     def __init__(self,actor):
         super(BhBlit,self).__init__(actor)
 
+    def _blitFuncOp(self,tgt,src,r,op,a):
+        tgt.blit(src,r,a)
+
+    def _blitFuncAl(self,tgt,src,r,op,a):
+        HELPER.blitAlpha(SCR,img[i],r[i].topleft,alpha,srcRect)
+
     def draw(self):
-        if self.actor.alpha==255:
-            self.drawOpaque()
-        else:
-            self.drawAlpha()
-
-    def drawAlpha(self):
-        None
-
-    def drawOpaque(self):
         img = self.actor.img
         r = self.actor.rect
-        ai = self.actor.areaIndex
+        ai = self.actor.areaIndex        
         srcRect = self.actor.area if ai==-1 else self.actor.area[ai]
         if not img or not r: return
         SCR = self.actor.engine.SCREEN
         ii = self.actor.imgIndex
+        alpha = self.actor.alpha
+        blitFunc = self._blitFuncOp if alpha==255 else self._blitFuncAl
         if isinstance(img,list):
             if isinstance(r,list):
                 if ii < 0:
                     for i in range(0,len(img)):
-                        SCR.blit( img[i], r[i], srcRect )
+                        blitFunc(SCR,img[i],r[i],alpha,srcRect)
                 else:
-                    SCR.blit( img[ii], r[ii], srcRect )
+                    for i in range(0,len(img)):
+                        blitFunc(SCR,img[ii],r[i],alpha,srcRect)
             else:
                 if ii < 0:
                     for i in range(0,len(img)):
-                        SCR.blit( img[i], r, srcRect )
+                        blitFunc(SCR,img[i],r,alpha,srcRect)
                 else:
-                    SCR.blit(img[ii],r)
+                    blitFunc(SCR,img[ii],r,alpha,srcRect)
         else: # IMG single
             if isinstance(r,list):
                 if ii < 0 :
                     for i in range(0,len(r)):
-                        SCR.blit( img, r[i], srcRect )
+                        blitFunc(SCR,img,r[i],alpha,srcRect)
                 else:
-                    SCR.blit(img,r[ii], srcRect)
+                    blitFunc(SCR,img,r[ii],alpha,srcRect)
             else:
-                SCR.blit(img,r, srcRect)
+                blitFunc(SCR,img,r,alpha,srcRect)
 
 #-----------------------------------------------------------
 class BhText(Behavior):

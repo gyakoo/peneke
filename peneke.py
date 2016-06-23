@@ -14,15 +14,18 @@ class Scene(engine.Actor):
     def __init__(self,tmxfile,engine):
         super(Scene,self).__init__(engine)
         self.tile_map = load_pygame(tmxfile)
-        self.offset = (0,0)
+        self.offsx, self.offsy = 0, 0
+
+    def update(self,dt):
+        self.offsx -= 50.0 * dt
 
     def draw(self):
-        self.drawLayers(range(0,3)) 
+        self.drawLayers(range(0,1)) 
 
     def drawLayers(self,lrang):
         tw, th = self.tile_map.tilewidth, self.tile_map.tileheight
-        ox, oy = self.offset
-        r = Rect( ox, oy, tw, th )        
+        ox, oy = self.offsx, self.offsy
+        r = Rect( ox, oy, tw, th )
         images = self.tile_map.images
         for l in lrang:
             layer = self.tile_map.layers[l] 
@@ -60,13 +63,12 @@ class Player(engine.Actor):
 # --------------------------------------------------------
 if __name__ == '__main__':
     # Initialize engine and actors
-    ENG = engine.Engine( "Peneke", (640,480) )
+    ENG = engine.Engine( "Peneke", (640,480), True )
     ENG.showFPS = True
 
-    ENG.addActor( Scene("data/test01.tmx",ENG) )
+    ENG.addActor( Scene("data/test02.tmx",ENG) )
     ENG.addActor( Player(ENG) )
     engine.BEHAVIORS.createText("peneke",(20,300))
-    #pygame.mouse.set_visible(0)
 
     # Main loop
     ENG.run()

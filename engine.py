@@ -77,7 +77,7 @@ class Engine:
     singleton = None
 
     '''Main Engine class'''
-    def __init__(self,name,resolution):
+    def __init__(self,name,resolution,fullscreen=False):
         '''Builds the Engine'''
         pygame.init()
         BEHAVIORS.engine = self
@@ -86,8 +86,12 @@ class Engine:
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
         self.SCRATCHSURFCACHE = {}
         self.KEYPRESSED = None
-        bestdepth = pygame.display.mode_ok(self.SCREENRECT.size, pygame.DOUBLEBUF, 32)
-        self.SCREEN = pygame.display.set_mode(self.SCREENRECT.size, pygame.DOUBLEBUF, bestdepth)
+        self.fullscreen = fullscreen
+        flags = pygame.DOUBLEBUF
+        if fullscreen: 
+            flags = flags | pygame.FULLSCREEN | pygame.HWSURFACE
+        bestdepth = pygame.display.mode_ok(self.SCREENRECT.size, flags, 32)
+        self.SCREEN = pygame.display.set_mode(self.SCREENRECT.size, flags, bestdepth)
         self.name = name
         pygame.display.set_caption(name)
         self.atfps, self.nextSound = 0.0, 0.0        
@@ -98,7 +102,9 @@ class Engine:
         self.pathToSounds= "data/sounds/"
         self.pathToImages= "data/images/"
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
-        Engine.singleton = self
+        Engine.singleton = self    
+        if fullscreen: 
+            pygame.mouse.set_visible(0)
 
     def addActor(self,a):
         '''Registers an actor in the game. an actor must be subclass of Actor'''

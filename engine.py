@@ -67,22 +67,33 @@ class HELPER:
     def blitAlpha(target, source, location, opacity, area=None):
         x, y = location
         size = (source.get_width(), source.get_height())
-        temp = Engine.singleton.getScratchSurf(size)
+        temp = Engine.instance.getScratchSurf(size)
         temp.blit(target, (-x, -y))
         temp.blit(source, (0, 0), area)
         temp.set_alpha(opacity)        
         target.blit(temp, location)
+
+    @staticmethod
+    def fillRect(r,color):
+        pygame.draw.rect(Engine.instance.SCREEN, color, r)
+
+    @staticmethod
+    def blit(source,dstRect,area=None):
+        Engine.instance.SCREEN.blit( source, dstRect, area)
+
 # --------------------------------------------------------
 class Engine:
-    singleton = None
+    instance = None
 
     '''Main Engine class'''
-    def __init__(self,name,resolution,fullscreen=False):
+    def __init__(self,name,vres,pres,fullscreen=False):
         '''Builds the Engine'''
         pygame.init()
         BEHAVIORS.engine = self
+        self.name = name
         self.clock = pygame.time.Clock()
-        self.SCREENRECT = Rect(0, 0, resolution[0], resolution[1])
+        self.virtualRes, self.physicalRes = vres, pres
+        self.scaling = vres != pres
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
         self.SCRATCHSURFCACHE = {}
         self.KEYPRESSED = None
@@ -90,19 +101,19 @@ class Engine:
         flags = pygame.DOUBLEBUF
         if fullscreen: 
             flags = flags | pygame.FULLSCREEN | pygame.HWSURFACE
-        bestdepth = pygame.display.mode_ok(self.SCREENRECT.size, flags, 32)
-        self.SCREEN = pygame.display.set_mode(self.SCREENRECT.size, flags, bestdepth)
-        self.name = name
+        bestdepth = pygame.display.mode_ok(self.physicalRes, flags, 32)        
+        self.FINALSCREEN = pygame.display.set_mode(self.physicalRes, flags, bestdepth)
+        self.SCREEN = pygame.Surface(self.virtualRes) if self.scaling else self.FINALSCREEN
         pygame.display.set_caption(name)
         self.atfps, self.nextSound = 0.0, 0.0        
         self.actors, self.actorsToDestroy = [], []
-        self.showFPS = False
-        self.running = True
+        self.showFPS, self.running = False, True
         self.pathToFonts = "data/fonts/"
         self.pathToSounds= "data/sounds/"
         self.pathToImages= "data/images/"
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
-        Engine.singleton = self    
+        self.bgColor = (0,0,0)
+        Engine.instance = self
         if fullscreen: 
             pygame.mouse.set_visible(0)
 
@@ -188,9 +199,11 @@ class Engine:
 
     def draw(self):
         '''Draws and flip buffers'''
-        self.SCREEN.fill((0,0,0))
+        self.SCREEN.fill(self.bgColor)
         for a in self.actors:
-            a.draw()        
+            a.draw()
+        if self.scaling:
+            pygame.transform.scale(self.SCREEN, self.physicalRes, self.FINALSCREEN)
         pygame.display.flip()
                    
     def update(self,dt):

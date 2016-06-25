@@ -11,6 +11,7 @@ from pytmx.util_pygame import *
 
 # --------------------------------------------------------
 class Scene(engine.Actor):
+    SCROLL_LIMIT_SP = 120.0
     def __init__(self,tmxfile,engine):
         super(Scene,self).__init__(engine)
         self.tile_map = load_pygame(tmxfile)
@@ -18,13 +19,32 @@ class Scene(engine.Actor):
         self.camWsX, self.camWsY= 0, 0        
 
     def update(self,dt):
-        if abs(self.camWsX - self.tgtCamWsX)>6:
-            self.camWsX += (self.tgtCamWsX-self.camWsX)*0.25*dt
-        if abs(self.camWsY - self.tgtCamWsY)>6:
-            self.camWsY += (self.tgtCamWsY-self.camWsY)*0.25*dt
-        
+        self.updateSmooth(dt)
         if self.engine.KEYPRESSED[K_LEFT]: self.tgtCamWsX -= 200.0*dt
         elif self.engine.KEYPRESSED[K_RIGHT]: self.tgtCamWsX += 200.0*dt
+    
+    def updateSmooth(self,dt):
+        difX = self.tgtCamWsX-self.camWsX 
+        difY = self.tgtCamWsY-self.camWsY
+        if abs(difX) > 6:
+            if difX < 0 : difX = min(-Scene.SCROLL_LIMIT_SP,difX)
+            else: difX = max(Scene.SCROLL_LIMIT_SP,difX)
+            self.camWsX += difX*dt
+        if abs(difY) > 6:
+            if difY < 0 : difY = min(-Scene.SCROLL_LIMIT_SP,difY)
+            else: difY = max(Scene.SCROLL_LIMIT_SP,difY)
+            self.camWsY += difY*dt
+
+    def updateLin(self,dt):
+        difX = self.tgtCamWsX-self.camWsX 
+        difY = self.tgtCamWsY-self.camWsY
+        lsq = difX*difX + difY*difY
+        if lsq<2: return
+        l = math.sqrt(lsq)
+        dx = difX/l
+        dy = difY/l
+        self.camWsX += dx*dt*320
+        self.camWsY += dy*dt*320
 
     def draw(self):
         self.drawLayers(0) 
@@ -33,7 +53,7 @@ class Scene(engine.Actor):
         '''Transform from World Space pixel coordinates to Tile Space indices'''
         tsX = wsX / self.tile_map.tilewidth
         tsY = wsY / self.tile_map.tileheight
-        return int(tsX), int(tsY)
+        return int(math.floor(tsX)), int(math.floor(tsY))
 
     def fromTsToGid(self,layerNdx,tsX,tsY):
         '''Transform from Tile Space indices coordinates to Gid'''

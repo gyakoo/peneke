@@ -235,7 +235,8 @@ class Engine:
         while self.running:
             # Clock
             self.clock.tick(60)
-            dt = 1.0/60.0#self.clock.get_time()/1000.0
+            dt = 1.0/60.0
+            #dt = self.clock.get_time()/1000.0
         
             # Input
             for event in pygame.event.get():
@@ -436,52 +437,65 @@ class BhSceneCameraFollowActor(Behavior):
         w,h = self.targetActor.rect.size
         self.actor.tgtCamWsX = self.targetActor.rect.left+w/2
         self.actor.tgtCamWsY = self.targetActor.rect.top+h/2
+        self.updateSmooth(dt)
+
+    def updateSmooth(self,dt):
+        difX = self.actor.tgtCamWsX-self.actor.camWsX 
+        difY = self.actor.tgtCamWsY-self.actor.camWsY
+        if abs(difX) > 6:
+            if difX < 0 : difX = min(-AcScene.SCROLL_LIMIT_SP,difX)
+            else: difX = max(AcScene.SCROLL_LIMIT_SP,difX)
+            self.actor.camWsX += difX*dt
+        if abs(difY) > 6:
+            if difY < 0 : difY = min(-AcScene.SCROLL_LIMIT_SP,difY)
+            else: difY = max(AcScene.SCROLL_LIMIT_SP,difY)
+            self.actor.camWsY += difY*dt       
+
+
+# --------------------------------------------------------
+class BhSceneCameraScrollByInput(Behavior):
+    def __init__(self,sceneActor):
+        super(BhSceneCameraScrollByInput,self).__init__(sceneActor)
+    
+    def update(self,dt):
+        keys = Engine.instance.KEYPRESSED
+        if keys[K_LEFT]     : self.actor.tgtCamWsX -= 200.0*dt
+        elif keys[K_RIGHT]  : self.actor.tgtCamWsX += 200.0*dt
+        if keys[K_UP]       : self.actor.tgtCamWsY -= 200.0*dt
+        elif keys[K_DOWN]   : self.actor.tgtCamWsY += 200.0*dt
+        self.actor.camWsX = self.actor.tgtCamWsX
+        self.actor.camWsY = self.actor.tgtCamWsY
+
 
 # --------------------------------------------------------
 class AcScene(Actor):
     SCROLL_LIMIT_SP = 120.0
-    def __init__(self,tmxfile,engine):
+    def __init__(self,tmxfile,engine,tilesCount=None):
         super(AcScene,self).__init__(engine)
         self.tile_map = load_pygame(tmxfile)
-        self.tgtCamWsX, self.tgtCamWsY = 1000, 300
+        self.tgtCamWsX, self.tgtCamWsY = 0, 0
         self.camWsX, self.camWsY= 0, 0        
         Engine.scene = self
         vr = self.engine.virtualRes
         self.vrHalfX, self.vrHalfY = vr[0]/2, vr[1]/2
+        self.tw, self.th = self.tile_map.tilewidth, self.tile_map.tileheight
+        if tilesCount:
+            self.vrTw,self.vrTh = tilesCount[0]+1, tilesCount[1]+1
+        else:
+            self.vrTw, self.vrTh = vr[0]/self.tw+1, vr[1]/self.th+1
 
     def update(self,dt):
         super(AcScene,self).update(dt)
-        self.updateSmooth(dt)
-
-    def updateSmooth(self,dt):
-        difX = self.tgtCamWsX-self.camWsX 
-        difY = self.tgtCamWsY-self.camWsY
-        if abs(difX) > 6:
-            if difX < 0 : difX = min(-AcScene.SCROLL_LIMIT_SP,difX)
-            else: difX = max(AcScene.SCROLL_LIMIT_SP,difX)
-            self.camWsX += difX*dt
-        if abs(difY) > 6:
-            if difY < 0 : difY = min(-AcScene.SCROLL_LIMIT_SP,difY)
-            else: difY = max(AcScene.SCROLL_LIMIT_SP,difY)
-            self.camWsY += difY*dt
-        if self.engine.KEYPRESSED[K_LEFT]: self.tgtCamWsX -= 200.0*dt
-        elif self.engine.KEYPRESSED[K_RIGHT]: self.tgtCamWsX += 200.0*dt
-
-    def updateLin(self,dt):
-        difX = self.tgtCamWsX-self.camWsX 
-        difY = self.tgtCamWsY-self.camWsY
-        lsq = difX*difX + difY*difY
-        if lsq<2: return
-        l = math.sqrt(lsq)
-        dx = difX/l
-        dy = difY/l
-        self.camWsX += dx*dt*320
-        self.camWsY += dy*dt*320
-        if self.engine.KEYPRESSED[K_LEFT]: self.tgtCamWsX -= 200.0*dt
-        elif self.engine.KEYPRESSED[K_RIGHT]: self.tgtCamWsX += 200.0*dt
+        #self.camWsX = max(self.camWsX,self.vrHalfX)         
 
     def draw(self):
-        self.drawLayers(0) 
+        self.drawLayer(0) 
+        super(AcScene,self).draw()
+        h = (self.vrTh-1)*self.th
+        r = Rect(0,h,(self.vrTw-1)*self.tw,Engine.instance.virtualRes[1]-h)
+        HELPER.fillRect(r, (40,40,200))
+        pygame.draw.rect(self.engine.SCREEN,(30,30,160),r)
+        pygame.draw.rect(self.engine.SCREEN,(200,200,200),r,1)
 
     def fromWsToSs(self,wsX,wsY):
         '''Transform from world space pixel coords to screen space pixel coords'''
@@ -508,11 +522,10 @@ class AcScene(Actor):
                 return o.x, o.y
         return 0,0
 
-    def drawLayers(self,layerNdx):
-        images = self.tile_map.images
-        tw, th = self.tile_map.tilewidth, self.tile_map.tileheight
+    def drawLayer(self,layerNdx):
+        images = self.tile_map.images        
+        tw,th = self.tw, self.th
         vr = self.engine.virtualRes
-        vrTw, vrTh = vr[0]/tw+1, vr[1]/th+1
         tlWsX, tlWsY = self.camWsX-self.vrHalfX, self.camWsY-self.vrHalfY
         startTsX, startTsY = self.fromWsToTs(tlWsX, tlWsY)
         ox, oy = tlWsX % tw, tlWsY % th
@@ -520,10 +533,10 @@ class AcScene(Actor):
         oy = -oy
         r = Rect( ox, oy, tw, th )
         tsY = startTsY
-        for iY in range(0,vrTh):
+        for iY in range(0,self.vrTh):
             tsX = startTsX
             r.x = ox
-            for iX in range(0,vrTw):
+            for iX in range(0,self.vrTw):
                 gid = self.fromTsToGid(layerNdx,tsX,tsY)
                 if gid:
                     self.engine.SCREEN.blit(images[gid], r)
@@ -556,11 +569,11 @@ class BEHAVIORS:
     def createText(text,topleft,fontname="type_writer.ttf",size=14):
         assert BEHAVIORS.engine
         a = Actor(BEHAVIORS.engine)
-        a.addBehavior(BhBlit(a))
         a.addBehavior(BhText(a,text,topleft,fontname,size))
         a.addBehavior(BhSequence(a,
           [BhMoveTo(a,(100,200),3.0), 
            BhMoveTo(a,(100,300),3.0), 
-           BhDestroyActor(a,3)]))
+           BhDestroyActor(a,10)]))
+        a.addBehavior(BhBlit(a,True))
         BEHAVIORS.engine.addActor(a)
 

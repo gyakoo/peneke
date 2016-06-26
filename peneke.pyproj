@@ -29,10 +29,10 @@
     <Compile Include="pytmx\util_pysdl2.py" />
     <Compile Include="pytmx\__init__.py" />
     <Compile Include="setup.py" />
+    <Compile Include="test.py" />
     <Compile Include="util_pygame.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="data\keys.gif" />
     <Content Include="data\tileset.png" />
     <Content Include="README.md" />
   </ItemGroup>

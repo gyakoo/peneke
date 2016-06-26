@@ -33,23 +33,24 @@ class TestActor(engine.Actor):
 # --------------------------------------------------------
 if __name__ == '__main__':
     # Initialize engine and actors
-    ENG = engine.Engine( "Peneke", (640,320), (1280,640), False)
+    ENG = engine.Engine( "Peneke", (480,320), (960,640), False)
     ENG.showFPS = True
 
     # SCENE
-    sceneActor = engine.AcScene("data/test02.tmx",ENG)
+    sceneActor = engine.AcScene("data/test02.tmx",ENG,(30,16))
     ENG.addActor( sceneActor )
 
     # SPRITE
     spriteActor = engine.Actor(ENG)
     spriteActor.addBehavior( engine.BhBlit(spriteActor,True) )
-    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", [(0,0,24,24), (24,0,24,24)], 6.0) )
-    spriteActor.rect = Rect( engine.Engine.scene.getInitSpawn(), (24,24))
+    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", [(0,0,16,16), (16,0,16,16)], 6.0) )
+    spriteActor.rect = Rect( engine.Engine.scene.getInitSpawn(), (16,16))
     ENG.addActor( spriteActor )
 
     # scene follow camera
-    sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )
-
+    #sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )
+    sceneActor.addBehavior( engine.BhSceneCameraScrollByInput(sceneActor) )
+    
     # TESTING
     engine.BEHAVIORS.createText("peneke",(20,300))
     ENG.addActor( TestActor(ENG) )

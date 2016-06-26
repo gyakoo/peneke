@@ -427,6 +427,17 @@ class BhMoveTo(Behavior):
             self.time -= dt
 
 # --------------------------------------------------------
+class BhSceneCameraFollowActor(Behavior):
+    def __init__(self,sceneActor,targetActor):
+        super(BhSceneCameraFollowActor,self).__init__(sceneActor)
+        self.targetActor = targetActor
+
+    def update(self,dt):
+        w,h = self.targetActor.rect.size
+        self.actor.tgtCamWsX = self.targetActor.rect.left+w/2
+        self.actor.tgtCamWsY = self.targetActor.rect.top+h/2
+
+# --------------------------------------------------------
 class AcScene(Actor):
     SCROLL_LIMIT_SP = 120.0
     def __init__(self,tmxfile,engine):
@@ -439,6 +450,7 @@ class AcScene(Actor):
         self.vrHalfX, self.vrHalfY = vr[0]/2, vr[1]/2
 
     def update(self,dt):
+        super(AcScene,self).update(dt)
         self.updateSmooth(dt)
 
     def updateSmooth(self,dt):
@@ -489,6 +501,12 @@ class AcScene(Actor):
             return 0
         layer = self.tile_map.layers[layerNdx]
         return layer.data[tsY][tsX]
+
+    def getInitSpawn(self,name="initspawn"):
+        for o in self.tile_map.objects:
+            if o.name == name:
+                return o.x, o.y
+        return 0,0
 
     def drawLayers(self,layerNdx):
         images = self.tile_map.images

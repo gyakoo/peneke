@@ -36,15 +36,24 @@ if __name__ == '__main__':
     ENG = engine.Engine( "Peneke", (640,320), (1280,640), False)
     ENG.showFPS = True
 
-    ENG.addActor( engine.AcScene("data/test02.tmx",ENG) )
+    # SCENE
+    sceneActor = engine.AcScene("data/test02.tmx",ENG)
+    ENG.addActor( sceneActor )
+
+    # SPRITE
+    spriteActor = engine.Actor(ENG)
+    spriteActor.addBehavior( engine.BhBlit(spriteActor,True) )
+    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", [(0,0,24,24), (24,0,24,24)], 6.0) )
+    spriteActor.rect = Rect( engine.Engine.scene.getInitSpawn(), (24,24))
+    ENG.addActor( spriteActor )
+
+    # scene follow camera
+    sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )
+
+    # TESTING
+    engine.BEHAVIORS.createText("peneke",(20,300))
     ENG.addActor( TestActor(ENG) )
 
-    a = engine.Actor(ENG)
-    a.addBehavior( engine.BhBlit(a,True) )
-    a.addBehavior( engine.BhSpriteAnim(a, "tileset_char.png", [(0,0,24,24), (24,0,24,24)], 6.0) )
-    a.rect = (1000, 300, 24,24)
-    ENG.addActor( a )
-    engine.BEHAVIORS.createText("peneke",(20,300))
 
     # Main loop
     ENG.run()

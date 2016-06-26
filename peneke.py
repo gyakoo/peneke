@@ -40,8 +40,9 @@ if __name__ == '__main__':
     ENG.addActor( TestActor(ENG) )
 
     a = engine.Actor(ENG)
-    a.addBehavior( engine.BhBlit(a) )
+    a.addBehavior( engine.BhBlit(a,True) )
     a.addBehavior( engine.BhSpriteAnim(a, "tileset_char.png", [(0,0,24,24), (24,0,24,24)], 6.0) )
+    a.rect = (1000, 300, 24,24)
     ENG.addActor( a )
     engine.BEHAVIORS.createText("peneke",(20,300))
 

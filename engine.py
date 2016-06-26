@@ -253,14 +253,22 @@ class Engine:
 
 #-----------------------------------------------------------
 class BhBlit(Behavior):
-    def __init__(self,actor):
+    def __init__(self,actor,worldSpace=False):
         super(BhBlit,self).__init__(actor)
+        self.worldSpace=worldSpace
 
     def _blitFuncOp(self,tgt,src,r,op,a):
+        if self.worldSpace:
+            top,left = Engine.scene.fromWsToSs(r[0],r[1])
+            r = (top,left,r[2],r[3])
         tgt.blit(src,r,a)
 
     def _blitFuncAl(self,tgt,src,r,op,a):
-        HELPER.blitAlpha(SCR,img[i],r[i].topleft,alpha,srcRect)
+        tl = r.topleft
+        if self.worldSpace:
+            top,left = Engine.scene.fromWsToSs(r[0],r[1])
+            tl = (top,left)
+        HELPER.blitAlpha(tgt,src,tl,a,a)
 
     def draw(self):
         img = self.actor.img
@@ -336,10 +344,6 @@ class BhDestroyActor(Behavior):
         self.time -= dt
         if self.time <= 0.0:
             self.actor.markForDestroy = True
-
-
-class BhSequence(Behavior):
-    None
 
 #----------------------------------------------------------------------
 class BhDestroyBehavior(Behavior):
@@ -431,6 +435,8 @@ class AcScene(Actor):
         self.tgtCamWsX, self.tgtCamWsY = 1000, 300
         self.camWsX, self.camWsY= 0, 0        
         Engine.scene = self
+        vr = self.engine.virtualRes
+        self.vrHalfX, self.vrHalfY = vr[0]/2, vr[1]/2
 
     def update(self,dt):
         self.updateSmooth(dt)
@@ -465,6 +471,11 @@ class AcScene(Actor):
     def draw(self):
         self.drawLayers(0) 
 
+    def fromWsToSs(self,wsX,wsY):
+        '''Transform from world space pixel coords to screen space pixel coords'''
+        tlWsX, tlWsY = self.camWsX-self.vrHalfX, self.camWsY-self.vrHalfY
+        return wsX-tlWsX, wsY-tlWsY
+
     def fromWsToTs(self,wsX,wsY):
         '''Transform from World Space pixel coordinates to Tile Space indices'''
         tsX = wsX / self.tile_map.tilewidth
@@ -484,7 +495,7 @@ class AcScene(Actor):
         tw, th = self.tile_map.tilewidth, self.tile_map.tileheight
         vr = self.engine.virtualRes
         vrTw, vrTh = vr[0]/tw+1, vr[1]/th+1
-        tlWsX, tlWsY = self.camWsX-vr[0]/2, self.camWsY-vr[1]/2
+        tlWsX, tlWsY = self.camWsX-self.vrHalfX, self.camWsY-self.vrHalfY
         startTsX, startTsY = self.fromWsToTs(tlWsX, tlWsY)
         ox, oy = tlWsX % tw, tlWsY % th
         ox = -ox
@@ -509,7 +520,6 @@ class BhSpriteAnim(Behavior):
         super(BhSpriteAnim,self).__init__(actor)
         self.actor.img = self.actor.engine.loadImage(imgName)
         self.actor.area = rects
-        self.actor.rect = (10,34,24,24)
         self.actor.areaIndex = 0
         self.period = 1.0/fps
         self.t = self.period

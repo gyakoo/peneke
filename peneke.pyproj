@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{b9565a82-cd26-4bf2-97e7-a89865ed20d7}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>peneke.py</StartupFile>
+    <StartupFile>setup.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -25,10 +25,11 @@
     <Compile Include="engine.py" />
     <Compile Include="peneke.py" />
     <Compile Include="pytmx\pytmx.py" />
-    <Compile Include="pytmx\util_pygame.py" />
     <Compile Include="pytmx\util_pyglet.py" />
     <Compile Include="pytmx\util_pysdl2.py" />
     <Compile Include="pytmx\__init__.py" />
+    <Compile Include="setup.py" />
+    <Compile Include="util_pygame.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="data\keys.gif" />

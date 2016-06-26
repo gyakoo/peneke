@@ -7,11 +7,13 @@ logger.addHandler(ch)
 logger.setLevel(logging.INFO)
 
 from .pytmx import *
+
+'''
 try:
     from pytmx.util_pygame import load_pygame
 except ImportError:
     logger.debug('cannot import pygame tools')
-
+'''
 
 __version__ = (3, 20, 15)
 __author__ = 'bitcraft'

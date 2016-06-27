@@ -25,7 +25,7 @@ class TestActor(engine.Actor):
         r = self.a.get_rect()
         r.topleft = (400,200)
         engine.HELPER.blitAlpha(self.engine.SCREEN,self.a,(40,20),int(self.alpha))
-        engine.HELPER.fillRect((10,10,24,24), (0,255,0,255))
+        engine.HELPER.drawRect((10,10,24,24), (0,255,0,255))
 
 
 # --------------------------------------------------------
@@ -51,7 +51,7 @@ class BhPlayer(engine.Behavior):
             changed=True
 
         if changed:
-            newRect = engine.HELPER.collide(self.actor.rect, newRect)
+            newRect = engine.HELPER.collideAsRect(self.actor.rect, newRect)
             self.actor.rect = Rect(newRect)
 
 # --------------------------------------------------------

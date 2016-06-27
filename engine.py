@@ -2,6 +2,7 @@
 Copyright (c) 2016 gyakoo
 '''
 import os, pygame, copy
+from sets import Set
 import math, random
 from pygame.locals import *
 import pytmx
@@ -55,6 +56,7 @@ class Actor(object):
 #----------------------------------------------------------------------
 class HELPER:
     EASE_LINEAR = 0
+    COLLIDERS=Set(range(992,1003))
     
     @staticmethod
     def easeCompute(): 
@@ -77,28 +79,30 @@ class HELPER:
         target.blit(temp, location)
 
     @staticmethod
-    def fillRect(r,color):
-        pygame.draw.rect(Engine.instance.SCREEN, color, r)
+    def drawRect(r,color,w=0,ws=False):
+        if ws:
+            top,left = Engine.scene.fromWsToSs(r[0],r[1])
+            r = (top,left,r[2],r[3])
+        pygame.draw.rect(Engine.instance.SCREEN, color, r, w)
 
     @staticmethod
     def blit(source,dstRect,area=None):
         Engine.instance.SCREEN.blit( source, dstRect, area)
 
     @staticmethod
-    def collide(src,dst):
+    def collideAsRect(src,dst):
         sc = Engine.scene
-        # get all 4 gids for new corners
-        x,y = sc.fromWsToTs(dst.left, dst.top)
-        gid0 = sc.fromTsToCollGid(x,y)
-        x,y = sc.fromWsToTs(dst.right, dst.top)
-        gid1 = sc.fromTsToCollGid(x,y)
-        x,y = sc.fromWsToTs(dst.right,dst.bottom)
-        gid2 = sc.fromTsToCollGid(x,y)
-        x,y= sc.fromWsToTs(dst.left,dst.bottom)
-        gid3 = sc.fromTsToCollGid(x,y)
-        r=range(992,1003)
-        if gid0 in r or gid1 in r or gid2 in r or gid3 in r:
-            return src
+        
+        # expanded rect
+        expAabb = src.union(dst)
+        if Engine.debug:
+            HELPER.drawRect(expAabb,(255,255,255),1,True)
+
+        # get all collide gids in the expAabb
+        gids = sc.getCollGidsInAabb(expAabb)
+        for gid in gids:
+            if gid in HELPER.COLLIDERS:
+                return src        
         return dst
 
 # --------------------------------------------------------
@@ -220,7 +224,6 @@ class Engine:
 
     def draw(self):
         '''Draws and flip buffers'''
-        self.SCREEN.fill(self.bgColor)
         for a in self.actors:
             a.draw()
         if self.scaling:
@@ -270,6 +273,7 @@ class Engine:
             self.KEYPRESSED = pygame.key.get_pressed()
             if self.KEYPRESSED[K_ESCAPE]: break
             nextkey -= dt
+            self.SCREEN.fill(self.bgColor)
             self.update(dt)
             self.draw()
 
@@ -472,7 +476,6 @@ class BhSceneCameraFollowActor(Behavior):
             else: difY = max(AcScene.SCROLL_LIMIT_SP,difY)
             self.actor.camWsY += difY*dt       
 
-
 # --------------------------------------------------------
 class BhSceneCameraScrollByInput(Behavior):
     def __init__(self,sceneActor):
@@ -486,7 +489,6 @@ class BhSceneCameraScrollByInput(Behavior):
         elif keys[K_DOWN]   : self.actor.tgtCamWsY += 200.0*dt
         self.actor.camWsX = self.actor.tgtCamWsX
         self.actor.camWsY = self.actor.tgtCamWsY
-
 
 # --------------------------------------------------------
 class AcScene(Actor):
@@ -520,7 +522,7 @@ class AcScene(Actor):
         # test GUI
         h = (self.vrTh-1)*self.th
         r = Rect(0,h,(self.vrTw-1)*self.tw,Engine.instance.virtualRes[1]-h)        
-        HELPER.fillRect(r, (40,40,200))
+        HELPER.drawRect(r, (40,40,200))
         pygame.draw.rect(self.engine.SCREEN,(30,30,160),r)
         pygame.draw.rect(self.engine.SCREEN,(200,200,200),r,1)
 
@@ -549,6 +551,18 @@ class AcScene(Actor):
             if o.name == name:
                 return o.x, o.y
         return 0,0
+
+    def getCollGidsInAabb(self,aabb):
+        '''Returns a set of collision Gids that the aabb touches'''
+        x0,y0 = self.fromWsToTs(aabb.left, aabb.top)
+        x1,y1 = self.fromWsToTs(aabb.right, aabb.bottom)
+        gids = Set([])
+        g=0
+        for j in range(y0,y1+1):
+            for i in range(x0,x1+1):
+                g = self.fromTsToCollGid(i,j)
+                if g: gids.add(g)
+        return gids
 
     def fromTsToCollGid(self,tsX,tsY):
         gid = self.fromTsToGid(AcScene.LAYER_COLLISION,tsX,tsY)

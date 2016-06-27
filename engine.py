@@ -88,6 +88,7 @@ class HELPER:
 class Engine:
     instance = None
     scene = None
+    debug = False
 
     '''Main Engine class'''
     def __init__(self,name,vres,pres,fullscreen=False):
@@ -245,6 +246,9 @@ class Engine:
                 elif event.type == pygame.MOUSEBUTTONUP:
                     for a in self.actors: 
                         a.mouseUp(pygame.mouse.get_pos())
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_F1:
+                        Engine.debug = not Engine.debug
                         
             self.KEYPRESSED = pygame.key.get_pressed()
             if self.KEYPRESSED[K_ESCAPE]: break
@@ -470,6 +474,8 @@ class BhSceneCameraScrollByInput(Behavior):
 # --------------------------------------------------------
 class AcScene(Actor):
     SCROLL_LIMIT_SP = 120.0
+    LAYER_FOREGROUND=0
+    LAYER_COLLISION=1
     def __init__(self,tmxfile,engine,tilesCount=None):
         super(AcScene,self).__init__(engine)
         self.tile_map = load_pygame(tmxfile)
@@ -489,13 +495,18 @@ class AcScene(Actor):
         #self.camWsX = max(self.camWsX,self.vrHalfX)         
 
     def draw(self):
-        self.drawLayer(0) 
+        if Engine.debug:
+            self.drawLayer([AcScene.LAYER_FOREGROUND,AcScene.LAYER_COLLISION])
+        else:
+            self.drawLayer([AcScene.LAYER_FOREGROUND]) 
         super(AcScene,self).draw()
+        # test GUI
         h = (self.vrTh-1)*self.th
-        r = Rect(0,h,(self.vrTw-1)*self.tw,Engine.instance.virtualRes[1]-h)
+        r = Rect(0,h,(self.vrTw-1)*self.tw,Engine.instance.virtualRes[1]-h)        
         HELPER.fillRect(r, (40,40,200))
         pygame.draw.rect(self.engine.SCREEN,(30,30,160),r)
         pygame.draw.rect(self.engine.SCREEN,(200,200,200),r,1)
+
 
     def fromWsToSs(self,wsX,wsY):
         '''Transform from world space pixel coords to screen space pixel coords'''
@@ -522,7 +533,10 @@ class AcScene(Actor):
                 return o.x, o.y
         return 0,0
 
-    def drawLayer(self,layerNdx):
+    def fromTsToCollGid(self,tsX,tsY):
+        return fromTsToGid(AcScene.LAYER_COLLISION,tsX,tsY)
+        
+    def drawLayer(self,layers):
         images = self.tile_map.images        
         tw,th = self.tw, self.th
         vr = self.engine.virtualRes
@@ -537,9 +551,10 @@ class AcScene(Actor):
             tsX = startTsX
             r.x = ox
             for iX in range(0,self.vrTw):
-                gid = self.fromTsToGid(layerNdx,tsX,tsY)
-                if gid:
-                    self.engine.SCREEN.blit(images[gid], r)
+                for layerNdx in layers:
+                    gid = self.fromTsToGid(layerNdx,tsX,tsY)
+                    if gid:
+                        self.engine.SCREEN.blit(images[gid], r)
                 r.x += tw
                 tsX += 1
             tsY += 1

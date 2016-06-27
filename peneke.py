@@ -29,6 +29,18 @@ class TestActor(engine.Actor):
 
 
 # --------------------------------------------------------
+class BhPlayer(engine.Behavior):
+    def __init__(self,actor):
+        super(BhPlayer,self).__init__(actor)
+
+    def update(self,dt):
+        keys = engine.Engine.instance.KEYPRESSED
+        if keys[K_a]: self.actor.rect.x -= 128*dt
+        elif keys[K_d]: self.actor.rect.x += 128*dt
+        if keys[K_w]: self.actor.rect.y -= 128*dt
+        elif keys[K_s]: self.actor.rect.y += 128*dt
+
+# --------------------------------------------------------
 # Entry point, only when executed, not imported
 # --------------------------------------------------------
 if __name__ == '__main__':
@@ -42,9 +54,10 @@ if __name__ == '__main__':
 
     # SPRITE
     spriteActor = engine.Actor(ENG)
-    spriteActor.addBehavior( engine.BhBlit(spriteActor,True) )
+    spriteActor.addBehavior( BhPlayer(spriteActor) )
     spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", [(0,0,16,16), (16,0,16,16)], 6.0) )
     spriteActor.rect = Rect( engine.Engine.scene.getInitSpawn(), (16,16))
+    spriteActor.addBehavior( engine.BhBlit(spriteActor,True) )
     ENG.addActor( spriteActor )
 
     # scene follow camera

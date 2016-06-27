@@ -35,10 +35,24 @@ class BhPlayer(engine.Behavior):
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
-        if keys[K_a]: self.actor.rect.x -= 128*dt
-        elif keys[K_d]: self.actor.rect.x += 128*dt
-        if keys[K_w]: self.actor.rect.y -= 128*dt
-        elif keys[K_s]: self.actor.rect.y += 128*dt
+        newRect = Rect(self.actor.rect)
+        changed=False
+        if keys[K_a]: 
+            newRect.x -= 128*dt
+            changed=True
+        elif keys[K_d]: 
+            newRect.x += 128*dt
+            changed=True
+        if keys[K_w]: 
+            newRect.y -= 128*dt
+            changed=True
+        elif keys[K_s]: 
+            newRect.y += 128*dt
+            changed=True
+
+        if changed:
+            newRect = engine.HELPER.collide(self.actor.rect, newRect)
+            self.actor.rect = Rect(newRect)
 
 # --------------------------------------------------------
 # Entry point, only when executed, not imported
@@ -65,8 +79,8 @@ if __name__ == '__main__':
     sceneActor.addBehavior( engine.BhSceneCameraScrollByInput(sceneActor) )
     
     # TESTING
-    engine.BEHAVIORS.createText("peneke",(20,300))
-    ENG.addActor( TestActor(ENG) )
+    #engine.BEHAVIORS.createText("peneke",(20,300))
+    #ENG.addActor( TestActor(ENG) )
 
 
     # Main loop

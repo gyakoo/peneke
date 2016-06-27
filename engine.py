@@ -84,6 +84,23 @@ class HELPER:
     def blit(source,dstRect,area=None):
         Engine.instance.SCREEN.blit( source, dstRect, area)
 
+    @staticmethod
+    def collide(src,dst):
+        sc = Engine.scene
+        # get all 4 gids for new corners
+        x,y = sc.fromWsToTs(dst.left, dst.top)
+        gid0 = sc.fromTsToCollGid(x,y)
+        x,y = sc.fromWsToTs(dst.right, dst.top)
+        gid1 = sc.fromTsToCollGid(x,y)
+        x,y = sc.fromWsToTs(dst.right,dst.bottom)
+        gid2 = sc.fromTsToCollGid(x,y)
+        x,y= sc.fromWsToTs(dst.left,dst.bottom)
+        gid3 = sc.fromTsToCollGid(x,y)
+        r=range(992,1003)
+        if gid0 in r or gid1 in r or gid2 in r or gid3 in r:
+            return src
+        return dst
+
 # --------------------------------------------------------
 class Engine:
     instance = None
@@ -496,7 +513,7 @@ class AcScene(Actor):
 
     def draw(self):
         if Engine.debug:
-            self.drawLayer([AcScene.LAYER_FOREGROUND,AcScene.LAYER_COLLISION])
+            self.drawLayer([AcScene.LAYER_COLLISION])
         else:
             self.drawLayer([AcScene.LAYER_FOREGROUND]) 
         super(AcScene,self).draw()
@@ -534,7 +551,9 @@ class AcScene(Actor):
         return 0,0
 
     def fromTsToCollGid(self,tsX,tsY):
-        return fromTsToGid(AcScene.LAYER_COLLISION,tsX,tsY)
+        gid = self.fromTsToGid(AcScene.LAYER_COLLISION,tsX,tsY)
+        if not gid: return gid
+        return self.tile_map.tiledgidmap[gid]-1
         
     def drawLayer(self,layers):
         images = self.tile_map.images        

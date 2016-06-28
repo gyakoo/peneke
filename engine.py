@@ -57,6 +57,8 @@ class Actor(object):
 class HELPER:
     EASE_LINEAR = 0
     COLLIDERS=Set(range(992,1003))
+    AXIS_X = 0
+    AXIS_Y = 1
     
     @staticmethod
     def easeCompute(): 
@@ -90,6 +92,19 @@ class HELPER:
         Engine.instance.SCREEN.blit( source, dstRect, area)
 
     @staticmethod
+    def tupleRectSAT(r0,r1):
+        '''Returns a tuple with 1st as axis with bigger distance (0=x,1=y)
+           and 2nd as the bigger separating distance.
+           If tuple[1]<0 there's penetration. If tuple[1]>0 no penetration.
+           Assumes Y grows down the screen.'''
+        # vertical edges
+        if r0[0] > r1[0]: r0,r1 = r1,r0 # assume r0 is always on left
+        sepX = r1[0] - (r0[0]+r0[2])
+        if r0[1] > r1[1]: r0,r1=r1,r0 # assume r0 is always on top
+        sepY = r1[1] - (r0[1]+r0[3])
+        return  (HELPER.AXIS_X,sepX) if sepX > sepY else (HELPER.AXIS_Y,sepY)
+
+    @staticmethod
     def collideAsRect(src,dst):
         sc = Engine.scene
         
@@ -99,9 +114,11 @@ class HELPER:
             HELPER.drawRect(expAabb,(255,255,255),1,True)
 
         # get all collide gids in the expAabb
-        gids = sc.getCollGidsInAabb(expAabb)
-        for gid in gids:
+        gidRects = sc.getCollGidsInAabb(expAabb)
+        for gr in gidRects:
+            gid, tileRect = gr
             if gid in HELPER.COLLIDERS:
+                if dst.collide(
                 return src        
         return dst
 
@@ -552,6 +569,10 @@ class AcScene(Actor):
                 return o.x, o.y
         return 0,0
 
+    def fromTsToTileRect(self,tsX,tsY):
+        w,h=self.tw,self.th
+        return (tsX*w, tsY*h, w, h)
+
     def getCollGidsInAabb(self,aabb):
         '''Returns a set of collision Gids that the aabb touches'''
         x0,y0 = self.fromWsToTs(aabb.left, aabb.top)
@@ -561,7 +582,8 @@ class AcScene(Actor):
         for j in range(y0,y1+1):
             for i in range(x0,x1+1):
                 g = self.fromTsToCollGid(i,j)
-                if g: gids.add(g)
+                if g: 
+                    gids.add( (g,self.fromTsToTileRect(i,j)) )
         return gids
 
     def fromTsToCollGid(self,tsX,tsY):

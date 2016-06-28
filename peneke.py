@@ -59,7 +59,7 @@ class BhPlayer(engine.Behavior):
 # --------------------------------------------------------
 if __name__ == '__main__':
     # Initialize engine and actors
-    ENG = engine.Engine( "Peneke", (480,320), (960,640), False)
+    ENG = engine.Engine( "Peneke", (480,320), (480,320), False)
     ENG.showFPS = True
 
     # SCENE

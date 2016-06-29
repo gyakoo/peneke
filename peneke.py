@@ -31,7 +31,9 @@ class TestActor(engine.Actor):
 # --------------------------------------------------------
 class BhPlayer(engine.Behavior):
     def __init__(self,actor):
-        super(BhPlayer,self).__init__(actor)
+        super(BhPlayer,self).__init__(actor)        
+        self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
+        self.actor.rect.size = (16,16)
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
@@ -49,6 +51,8 @@ class BhPlayer(engine.Behavior):
         elif keys[K_s]: 
             newRect.y += 128*dt
             changed=True
+        elif keys[K_SPACE]:
+            self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
 
         if changed:
             newRect = engine.HELPER.collideAsRect(self.actor.rect, newRect)
@@ -59,24 +63,27 @@ class BhPlayer(engine.Behavior):
 # --------------------------------------------------------
 if __name__ == '__main__':
     # Initialize engine and actors
-    ENG = engine.Engine( "Peneke", (480,320), (480,320), False)
-    ENG.showFPS = True
+    virtualRes = (480,320)
+    resFactor = 2
+    fullscreen = False
+    engineObj = engine.Engine( "Peneke", virtualRes, (virtualRes[0]*resFactor,virtualRes[1]*resFactor), fullscreen)
+    engineObj.showFPS = True
 
     # SCENE
-    sceneActor = engine.AcScene("data/test02.tmx",ENG,(30,16))
-    ENG.addActor( sceneActor )
+    sceneActor = engine.AcScene("data/test02.tmx",engineObj,(30,16))
+    engineObj.addActor( sceneActor )
 
     # SPRITE
-    spriteActor = engine.Actor(ENG)
+    spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayer(spriteActor) )
     spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", [(0,0,16,16), (16,0,16,16)], 6.0) )
-    spriteActor.rect = Rect( engine.Engine.scene.getInitSpawn(), (16,16))
     spriteActor.addBehavior( engine.BhBlit(spriteActor,True) )
-    ENG.addActor( spriteActor )
+    engineObj.addActor( spriteActor )
 
     # scene follow camera
     #sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )
     sceneActor.addBehavior( engine.BhSceneCameraScrollByInput(sceneActor) )
+    sceneActor.tgtCamWsX, sceneActor.tgtCamWsY = spriteActor.rect.topleft
     
     # TESTING
     #engine.BEHAVIORS.createText("peneke",(20,300))
@@ -84,7 +91,7 @@ if __name__ == '__main__':
 
 
     # Main loop
-    ENG.run()
+    engineObj.run()
 
     # Finishing 
-    ENG.destroy()
+    engineObj.destroy()

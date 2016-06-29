@@ -30,7 +30,7 @@ class Actor(object):
         self.markForDestroy = False
         self.behaviors = []
         self.img = None
-        self.rect, self.area = None, None
+        self.rect, self.area = Rect(0,0,0,0), None
         self.alpha = 255
         self.imgIndex = -1
         self.areaIndex = -1
@@ -92,34 +92,57 @@ class HELPER:
         Engine.instance.SCREEN.blit( source, dstRect, area)
 
     @staticmethod
-    def tupleRectSAT(r0,r1):
-        '''Returns a tuple with 1st as axis with bigger distance (0=x,1=y)
-           and 2nd as the bigger separating distance.
-           If tuple[1]<0 there's penetration. If tuple[1]>0 no penetration.
-           Assumes Y grows down the screen.'''
-        # vertical edges
-        if r0[0] > r1[0]: r0,r1 = r1,r0 # assume r0 is always on left
-        sepX = r1[0] - (r0[0]+r0[2])
-        if r0[1] > r1[1]: r0,r1=r1,r0 # assume r0 is always on top
-        sepY = r1[1] - (r0[1]+r0[3])
-        return  (HELPER.AXIS_X,sepX) if sepX > sepY else (HELPER.AXIS_Y,sepY)
+    def buildSweepSegments(src,dst):
+        return [ (src.topleft,  dst.topleft),
+              (src.topright, dst.topright),
+              (src.bottomright, dst.bottomright),
+              (src.bottomleft, dst.bottomleft) ]
+
+    @staticmethod
+    def segmentVsSegment(a,b):
+        x0,y0,x1,y1 = a[0][0],a[0][1], a[1][0], a[1][1]
+        x2,y2,x3,y3 = b[0][0],b[0][1], b[1][0], b[1][1]
+        a,b,c = x2-x0, x1-x0, x3-x2
+        d,e,f = y1-y0, y3-y2, y2-y0
+        div = (c*d - e*b)
+        if div:
+            inv = 1.0/div
+            t = (f*c - a*e)*inv
+            s = (f*b - a*d)*inv
+            if s>=0.0 and s<=1.0 and t>=0.0 and t<=1.0:
+                return True,t
+        return False,0
+
+    @staticmethod
+    def getTupleRectSegments(rect):
+        r = Rect(rect)
+        return [ (r.bottomleft, r.topleft),
+                 (r.topleft,r.topright),
+                 (r.topright,r.bottomright),
+                 (r.bottomright,r.bottomleft) ]
+
+    @staticmethod
+    def segmentVsTupleRect(seg, rect):
+        rsegs = HELPER.getTupleRectSegments(rect)
+        for rs in rsegs:
+            i,t = HELPER.segmentVsSegment(seg, rs)
+
 
     @staticmethod
     def collideAsRect(src,dst):
         sc = Engine.scene
         
-        # expanded rect
-        expAabb = src.union(dst)
-        if Engine.debug:
-            HELPER.drawRect(expAabb,(255,255,255),1,True)
+        # all possible intersected tiles (manifold)
+        segments = HELPER.buildSweepSegments(src,dst)
+        manifold = Set([])
+        for seg in segments:
+            manifold.union_update( sc.getCollGidsInSegment(seg) )
 
-        # get all collide gids in the expAabb
-        gidRects = sc.getCollGidsInAabb(expAabb)
-        for gr in gidRects:
-            gid, tileRect = gr
-            if gid in HELPER.COLLIDERS:
-                if dst.collide(
-                return src        
+        # narrow phase (check intersections)
+        for gidRect in manifold:
+            for seg in segments:
+                HELPER.segmentVsTupleRect(seg,gidRect[1])
+
         return dst
 
 # --------------------------------------------------------
@@ -144,7 +167,7 @@ class Engine:
         flags = pygame.DOUBLEBUF
         if fullscreen: 
             flags = flags | pygame.FULLSCREEN | pygame.HWSURFACE
-        bestdepth = pygame.display.mode_ok(self.physicalRes, flags, 32)        
+        bestdepth = pygame.display.mode_ok(self.physicalRes, flags, 32)
         self.FINALSCREEN = pygame.display.set_mode(self.physicalRes, flags, bestdepth)
         self.SCREEN = pygame.Surface(self.virtualRes) if self.scaling else self.FINALSCREEN
         pygame.display.set_caption(name)
@@ -582,9 +605,16 @@ class AcScene(Actor):
         for j in range(y0,y1+1):
             for i in range(x0,x1+1):
                 g = self.fromTsToCollGid(i,j)
-                if g: 
+                if g in HELPER.COLLIDERS: 
                     gids.add( (g,self.fromTsToTileRect(i,j)) )
         return gids
+
+    def getCollGidsInSegment(self,seg):
+        #build aabb out of segment
+        f,t = seg[0], seg[1]
+        segAabb = Rect( f, (t[0]-f[0], t[1]-f[1]) )
+        segAabb.normalize()
+        return self.getCollGidsInAabb(segAabb)
 
     def fromTsToCollGid(self,tsX,tsY):
         gid = self.fromTsToGid(AcScene.LAYER_COLLISION,tsX,tsY)

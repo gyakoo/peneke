@@ -37,26 +37,24 @@ class BhPlayer(engine.Behavior):
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
-        newRect = Rect(self.actor.rect)
-        changed=False
-        if keys[K_a]: 
-            newRect.x -= 128*dt
-            changed=True
-        elif keys[K_d]: 
-            newRect.x += 128*dt
-            changed=True
-        if keys[K_w]: 
-            newRect.y -= 128*dt
-            changed=True
-        elif keys[K_s]: 
-            newRect.y += 128*dt
-            changed=True
-        elif keys[K_SPACE]:
-            self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
 
-        if changed:
-            newRect = engine.HELPER.collideAsRect(self.actor.rect, newRect)
-            self.actor.rect = Rect(newRect)
+        # gravity
+        downMov = 100*dt
+        newRect = engine.HELPER.rayCastVertical(self.actor.rect,downMov)
+
+        # horiz mov
+        moved=False        
+        if keys[K_a]: 
+            moved, dx = True, -128*dt
+        elif keys[K_d]: 
+            moved, dx = True, 128*dt
+        elif keys[K_SPACE]:
+            newRect.topleft = engine.Engine.scene.getInitSpawn()
+
+        if moved:
+            newRect = engine.HELPER.rayCastMov(newRect,dx)
+
+        self.actor.rect = Rect(newRect)
 
 # --------------------------------------------------------
 # Entry point, only when executed, not imported

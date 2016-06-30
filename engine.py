@@ -57,8 +57,6 @@ class Actor(object):
 class HELPER:
     EASE_LINEAR = 0
     COLLIDERS=Set(range(992,1003))
-    AXIS_X = 0
-    AXIS_Y = 1
     
     @staticmethod
     def easeCompute(): 
@@ -92,58 +90,179 @@ class HELPER:
         Engine.instance.SCREEN.blit( source, dstRect, area)
 
     @staticmethod
-    def buildSweepSegments(src,dst):
-        return [ (src.topleft,  dst.topleft),
-              (src.topright, dst.topright),
-              (src.bottomright, dst.bottomright),
-              (src.bottomleft, dst.bottomleft) ]
-
-    @staticmethod
     def segmentVsSegment(a,b):
         x0,y0,x1,y1 = a[0][0],a[0][1], a[1][0], a[1][1]
         x2,y2,x3,y3 = b[0][0],b[0][1], b[1][0], b[1][1]
-        a,b,c = x2-x0, x1-x0, x3-x2
-        d,e,f = y1-y0, y3-y2, y2-y0
-        div = (c*d - e*b)
+        b,c = x1 - x0, x3 - x2
+        d,e = y1 - y0, y3 - y2	
+        div = (c * d - e * b)
         if div:
-            inv = 1.0/div
-            t = (f*c - a*e)*inv
-            s = (f*b - a*d)*inv
-            if s>=0.0 and s<=1.0 and t>=0.0 and t<=1.0:
+            a, f = x2 - x0, y2 - y0
+            inv = 1.0 / div
+            t = (f * c - a * e) * inv
+            s = (f * b - a * d) * inv
+            if s >= 0.0 and s <= 1.0 and t >= 0.0 and t <= 1.0:
                 return True,t
         return False,0
 
     @staticmethod
-    def getTupleRectSegments(rect):
-        r = Rect(rect)
-        return [ (r.bottomleft, r.topleft),
-                 (r.topleft,r.topright),
-                 (r.topright,r.bottomright),
-                 (r.bottomright,r.bottomleft) ]
+    def fractionToWs(seg,f):
+        d = (seg[1][0] - seg[0][0], seg[1][1] - seg[0][1])
+        return (seg[0][0] + d[0] * f, seg[0][1] + d[1] * f)
 
     @staticmethod
-    def segmentVsTupleRect(seg, rect):
-        rsegs = HELPER.getTupleRectSegments(rect)
-        for rs in rsegs:
-            i,t = HELPER.segmentVsSegment(seg, rs)
+    def segmentVsManySegments(seg,segs):
+        i,m = False,10 # t should be always 0-1
+        for s in segs:
+            c,t = HELPER.segmentVsSegment(seg,s)
+            if c and t < m:
+                m = t
+                i = True
+        return i,m
 
+    @staticmethod
+    def segmentVsRect(seg,r):
+        rs = HELPER.getRectSegments(r)
+        return HELPER.segmentVsManySegments(seg,rs)
+
+    @staticmethod
+    def segmentVsGidRect(seg,gr):
+        rs = HELPER.getGidRectSegments(gr)
+        return HELPER.segmentVsManySegments(seg,rs)
+
+    @staticmethod
+    def getRectSegments(r):
+        return [ (r.topleft,r.topright), 
+                (r.topright,r.bottomright), 
+                (r.bottomright,r.bottomleft), 
+                (r.bottomleft, r.topleft) ]
+
+    @staticmethod
+    def getGidRectSegments(gr):
+        gid, r = gr[0], Rect(gr[1])
+        if gid==997:
+            l = [ (r.bottomleft, r.topright) ]
+        elif gid==998:
+            l = [ (r.topleft, r.bottomright) ]
+        elif gid==999:
+            l = [ (r.bottomleft, r.midright) ]
+        elif gid==1000:
+            l = [ (r.midleft, r.topright) ]
+        elif gid==1001:
+            l = [ (r.topleft, r.midright) ]
+        elif gid==1002:
+            l = [ (r.midleft, r.bottomright) ]
+        else:
+            l = HELPER.getRectSegments(r)
+        return l
+
+    @staticmethod
+    def getRectSweepSegments(src,dst):
+        return [ (src.topleft,dst.topleft), 
+                (src.topright, dst.topright),
+                (src.bottomright, dst.bottomright),
+                (src.bottomleft, dst.bottomleft) ]
+
+    @staticmethod
+    def getClosestIntersection(src,dirOrDst,r):
+        if len(dirOrDst)==2:
+            dst = Rect(dirOrDst)
+            dst.move_ip(dir)
+        else:
+            dst = dirOrDst
+        sweepSegs = HELPER.getRectSweepSegments(src,dst)
+        tgtSegs = HELPER.getRectSegments(Rect(r))
+        isect,closest, cindex = False,10,-1  
+        for j in range(0, len(sweepSegs)):
+            i,t = HELPER.segmentVsManySegments(sweepSegs[j],tgtSegs)
+            if i and t < closest:
+                isect, closest, cindex = True, t, j
+        return isect,closest, HELPER.fractionToWs(sweepSegs[cindex],closest) \
+                if isect else (0,0)
+    
+    @staticmethod
+    def rayCastVertical(r,dy):
+        isect,mint = False, 10
+        segs = [ ( r.bottomleft, (r.left,r.bottom+dy) ),
+            ( r.bottomright, (r.right, r.bottom+dy) ) ]
+        for j in range(0,len(segs)):
+            seg = segs[j]
+            lgr = Engine.scene.getCollGidsInSegment(seg)
+            for gr in lgr:
+                i, t = HELPER.segmentVsGidRect(seg,gr)
+                if i and t < mint:
+                    isect, mint = True, t
+        
+        newRect = Rect(r)
+        dy = dy*mint if isect else dy
+        newRect.move_ip(0,dy)
+        #newRect.move_ip( -dx/abs(dx) if dx else 0, -dy/abs(dy) if dy else 0 )
+        return newRect
+
+    @staticmethod
+    def rayCastMov(srcRect,dx):
+        isect,mint = False, 10
+        r = srcRect.inflate(0,-2)
+        r.move_ip(dx/abs(dx),0)
+        if dx > 0.0:
+            segs = [ ( r.topright, (r.right+dx,r.top) ),
+                     ( r.midright, (r.right+dx, r.centery) ),
+                     ( r.bottomright, (r.right+dx, r.bottom) ) ]
+        else:
+            segs = [ ( r.topleft, (r.left+dx,r.top) ),                     
+                     ( r.midleft, (r.left+dx, r.centery) ),
+                     ( r.bottomleft, (r.left+dx, r.bottom) ) ]
+        
+        for j in range(0,len(segs)):
+            seg = segs[j]
+            lgr = Engine.scene.getCollGidsInSegment(seg)
+            for gr in lgr:
+                i, t = HELPER.segmentVsGidRect(seg,gr)
+                if i and t < mint:
+                    isect, mint = True, t
+        
+        newRect = Rect(srcRect)
+        dx = dx*mint if isect else dx
+        newRect.move_ip(dx,0)
+        return newRect
 
     @staticmethod
     def collideAsRect(src,dst):
-        sc = Engine.scene
-        
-        # all possible intersected tiles (manifold)
-        segments = HELPER.buildSweepSegments(src,dst)
-        manifold = Set([])
-        for seg in segments:
-            manifold.union_update( sc.getCollGidsInSegment(seg) )
-
-        # narrow phase (check intersections)
-        for gidRect in manifold:
-            for seg in segments:
-                HELPER.segmentVsTupleRect(seg,gidRect[1])
-
         return dst
+
+    '''
+    @staticmethod
+    def rectVsRect(src,dst,otherRect):
+        i,t,p = HELPER.getClosestIntersection(src,dst,otherRect)
+        if not i: return dst
+        dx,dy = dst.x-src.x, dst.y-src.y  
+        newRect = Rect(src)
+        newRect.x += dx*t
+        newRect.y += dy*t
+        return newRect
+
+    @staticmethod
+    def rectVsGidRects(src,dst,gidRects):
+        c,mint=False,10
+        for gr in gidRects:
+            i,t,p = HELPER.getClosestIntersection(src,dst,gr[1])
+            if i and t < mint:
+                c,mint= True,t
+        if not c: return dst
+        dx,dy = dst.x-src.x, dst.y-src.y  
+        newRect = Rect(src)
+        newRect.move_ip(dx*mint,dy*mint)
+        newRect.move_ip( -dx/abs(dx) if dx else 0, -dy/abs(dy) if dy else 0 )
+        return newRect
+
+    @staticmethod
+    def collideAsRect(src,dst):
+        expanded = src.union(dst)
+        gidRects = Engine.scene.getCollGidsInAabb(expanded)
+        return HELPER.rectVsGidRects(src,dst,gidRects)
+    '''
+
+        
 
 # --------------------------------------------------------
 class Engine:
@@ -565,7 +684,6 @@ class AcScene(Actor):
         HELPER.drawRect(r, (40,40,200))
         pygame.draw.rect(self.engine.SCREEN,(30,30,160),r)
         pygame.draw.rect(self.engine.SCREEN,(200,200,200),r,1)
-
 
     def fromWsToSs(self,wsX,wsY):
         '''Transform from world space pixel coords to screen space pixel coords'''

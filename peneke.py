@@ -64,7 +64,7 @@ if __name__ == '__main__':
     virtualRes = (480,320)
     resFactor = 2
     fullscreen = False
-    engineObj = engine.Engine( "Peneke", virtualRes, (virtualRes[0]*resFactor,virtualRes[1]*resFactor), fullscreen)
+    engineObj = engine.Engine( "Peneke", virtualRes, (int(virtualRes[0]*resFactor),int(virtualRes[1]*resFactor)), fullscreen)
     engineObj.showFPS = True
 
     # SCENE
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayer(spriteActor) )
     spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", [(0,0,16,16), (16,0,16,16)], 6.0) )
-    spriteActor.addBehavior( engine.BhBlit(spriteActor,True) )
+    spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
 
     # scene follow camera

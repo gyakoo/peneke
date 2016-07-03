@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" width="90" height="20" tilewidth="16" tileheight="16">
  <tileset firstgid="1" name="base" tilewidth="16" tileheight="16">
-  <image source="tileset_template.png" width="512" height="512"/>
- </tileset>
+  <image source="tileset256.png" trans="00ffff" width="512" height="512"/>
+ </tileset> 
  <layer name="draw0" width="90" height="20">
   <data>
    <tile gid="2"/>

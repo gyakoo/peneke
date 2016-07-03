@@ -70,13 +70,14 @@ class HELPER:
 
     @staticmethod
     def blitAlpha(target, source, location, opacity, area=None):
-        x, y = location
-        size = (source.get_width(), source.get_height())
-        temp = Engine.instance.getScratchSurf(size)
-        temp.blit(target, (-x, -y))
-        temp.blit(source, (0, 0), area)
-        temp.set_alpha(opacity)        
-        target.blit(temp, location)
+        raise NotImplementedError("Not implementd")
+        #x, y = location
+        #size = (source.get_width(), source.get_height())
+        #temp = Engine.instance.getScratchSurf(size)
+        #temp.blit(target, (-x, -y))
+        #temp.blit(source, (0, 0), area)
+        #temp.set_alpha(opacity)        
+        #target.blit(temp, location)
 
     @staticmethod
     def drawRect(r,color,w=0,ws=False):
@@ -203,7 +204,7 @@ class HELPER:
     def rayCastMov(srcRect,dx):
         isect,mint = False, 10
         r = srcRect.inflate(0,-2)
-        r.move_ip(dx/abs(dx),0)
+        #r.move_ip(dx/abs(dx),0)
         if dx > 0.0:
             segs = [ ( r.topright, (r.right+dx,r.top) ),
                      ( r.midright, (r.right+dx, r.centery) ),
@@ -271,7 +272,7 @@ class Engine:
     debug = False
 
     '''Main Engine class'''
-    def __init__(self,name,vres,pres,fullscreen=False):
+    def __init__(self,name,vres,pres,fullscreen=False,depth=8):
         '''Builds the Engine'''
         pygame.init()
         BEHAVIORS.engine = self
@@ -286,9 +287,11 @@ class Engine:
         flags = pygame.DOUBLEBUF
         if fullscreen: 
             flags = flags | pygame.FULLSCREEN | pygame.HWSURFACE
-        bestdepth = pygame.display.mode_ok(self.physicalRes, flags, 32)
+        bestdepth = pygame.display.mode_ok(self.physicalRes, flags, depth)
         self.FINALSCREEN = pygame.display.set_mode(self.physicalRes, flags, bestdepth)
-        self.SCREEN = pygame.Surface(self.virtualRes) if self.scaling else self.FINALSCREEN
+        self.SCREEN = pygame.Surface(self.virtualRes,flags,bestdepth) if self.scaling else self.FINALSCREEN
+        if self.scaling:
+            self.SCREEN.set_palette( self.FINALSCREEN.get_palette() )
         pygame.display.set_caption(name)
         self.atfps, self.nextSound = 0.0, 0.0        
         self.actors, self.actorsToDestroy = [], []
@@ -365,7 +368,7 @@ class Engine:
             if rotation or flipx or flipy:
                 img = self.loadImage(file)
             else:
-                img = pygame.image.load(path).convert_alpha()
+                img = pygame.image.load(path)#.convert_alpha()
             if rotation:
                 img = pygame.transform.rotate(img, rotation)
             if flipx or flipy:
@@ -444,8 +447,8 @@ class BhBlit(Behavior):
 
     def _blitFuncOp(self,tgt,src,r,op,a):
         if self.worldSpace:
-            top,left = Engine.scene.fromWsToSs(r[0],r[1])
-            r = (top,left,r[2],r[3])
+            left,top= Engine.scene.fromWsToSs(r[0],r[1])
+            r = ( math.ceil(left),math.ceil(top),r[2],r[3])
         tgt.blit(src,r,a)
 
     def _blitFuncAl(self,tgt,src,r,op,a):
@@ -453,7 +456,8 @@ class BhBlit(Behavior):
         if self.worldSpace:
             top,left = Engine.scene.fromWsToSs(r[0],r[1])
             tl = (top,left)
-        HELPER.blitAlpha(tgt,src,tl,a,a)
+        raise NotImplementedError("alpha not implemented")
+        #HELPER.blitAlpha(tgt,src,tl,a,a)
 
     def draw(self):
         img = self.actor.img

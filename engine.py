@@ -21,6 +21,7 @@ class Behavior(object):
     def update(self,dt): None
     def draw(self): None
     def destroy(self): None
+    def keyUp(self,key): None
 
 # -------------------------------------------------------
 class Actor(object):
@@ -52,6 +53,8 @@ class Actor(object):
         for b in self.behaviors: b.destroy()
         self.behaviors = []
     def mouseUp(self,p): None
+    def keyUp(self,key):
+        for b in self.behaviors: b.keyUp(key)
 
 #----------------------------------------------------------------------
 class HELPER:
@@ -151,7 +154,16 @@ class HELPER:
     @staticmethod
     def getGidRectSegments(gr,rectflags=0):
         gid, r = gr[0], Rect(gr[1])
-        l = HELPER.getRectSegments(r,rectflags)
+        if gid == 993L:
+            l = [ (r.topleft, r.topright) ]
+        elif gid == 994L:
+            l = [ (r.bottomleft, r.bottomright) ]
+        elif gid == 995L:
+            l = [ (r.topleft, r.bottomleft) ]
+        elif gid == 996L:
+            l = [ (r.topright, r.bottomright) ]
+        else:
+            l = HELPER.getRectSegments(r,rectflags)
         return l
 
     @staticmethod
@@ -182,7 +194,7 @@ class HELPER:
     def raycastDown(srcRect,dy):
         isect,mint = False, 10
         ceildy=dy
-        r=Rect(srcRect)
+        r=Rect(srcRect).inflate(-2,0)
         segs = [ ( (r.left,r.bottom), (r.left,r.bottom+ceildy) ),
             ( (r.centerx,r.bottom), (r.centerx,r.bottom+ceildy) ),
             ( (r.right,r.bottom), (r.right, r.bottom+ceildy) ) ]
@@ -395,6 +407,8 @@ class Engine:
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_F1:
                         Engine.debug = not Engine.debug
+                    for a in self.actors: 
+                        a.keyUp(event.key)
                         
             self.KEYPRESSED = pygame.key.get_pressed()
             if self.KEYPRESSED[K_ESCAPE]: break
@@ -581,9 +595,13 @@ class BhMoveTo(Behavior):
 
 # --------------------------------------------------------
 class BhSceneCameraFollowActor(Behavior):
+    SCROLL_LIMIT_SP = 120.0
     def __init__(self,sceneActor,targetActor):
         super(BhSceneCameraFollowActor,self).__init__(sceneActor)
         self.targetActor = targetActor
+        self.update(0.016)
+        self.actor.camWsX = self.actor.tgtCamWsX
+        self.actor.camWsY = self.actor.tgtCamWsY
 
     def update(self,dt):
         w,h = self.targetActor.rect.size
@@ -594,14 +612,15 @@ class BhSceneCameraFollowActor(Behavior):
     def updateSmooth(self,dt):
         difX = self.actor.tgtCamWsX-self.actor.camWsX 
         difY = self.actor.tgtCamWsY-self.actor.camWsY
+        #LIMIT_SP = BhSceneCameraFollowActor.SCROLL_LIMIT_SP
         if abs(difX) > 6:
-            if difX < 0 : difX = min(-AcScene.SCROLL_LIMIT_SP,difX)
-            else: difX = max(AcScene.SCROLL_LIMIT_SP,difX)
-            self.actor.camWsX += difX*dt
+            #if difX < 0 : difX = min(-LIMIT_SP,difX)
+            #else: difX = max(LIMIT_SP,difX)
+            self.actor.camWsX += difX*3.0*dt
         if abs(difY) > 6:
-            if difY < 0 : difY = min(-AcScene.SCROLL_LIMIT_SP,difY)
-            else: difY = max(AcScene.SCROLL_LIMIT_SP,difY)
-            self.actor.camWsY += difY*dt       
+            #if difY < 0 : difY = min(-LIMIT_SP,difY)
+            #else: difY = max(LIMIT_SP,difY)
+            self.actor.camWsY += difY*4.0*dt       
 
 # --------------------------------------------------------
 class BhSceneCameraScrollByInput(Behavior):
@@ -619,7 +638,6 @@ class BhSceneCameraScrollByInput(Behavior):
 
 # --------------------------------------------------------
 class AcScene(Actor):
-    SCROLL_LIMIT_SP = 120.0
     LAYER_FOREGROUND=0
     LAYER_COLLISION=1
     def __init__(self,tmxfile,engine,tilesCount=None):

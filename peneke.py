@@ -44,17 +44,25 @@ class BhPlayer(engine.Behavior):
 
         # horiz mov
         moved=False        
-        if keys[K_a]: 
-            moved, dx = True, -128*dt
-        elif keys[K_d]: 
-            moved, dx = True, 128*dt
-        elif keys[K_SPACE]:
-            newRect.topleft = engine.Engine.scene.getInitSpawn()
+        if keys[K_LEFT]: 
+            moved, dx = True, -160*dt
+        elif keys[K_RIGHT]: 
+            moved, dx = True, 160*dt
 
         if moved:
             newRect = engine.HELPER.rayCastMov(newRect,dx)
 
         self.actor.rect = Rect(newRect)
+
+    def keyUp(self,key):
+        if key == pygame.K_SPACE:
+            self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
+        elif key == pygame.K_v:
+            self.actor.rect.top -= 70
+        elif key == pygame.K_LCTRL:
+            None
+
+
 
 # --------------------------------------------------------
 # Entry point, only when executed, not imported
@@ -79,8 +87,8 @@ if __name__ == '__main__':
     engineObj.addActor( spriteActor )
 
     # scene follow camera
-    #sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )
-    sceneActor.addBehavior( engine.BhSceneCameraScrollByInput(sceneActor) )
+    sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )
+    #sceneActor.addBehavior( engine.BhSceneCameraScrollByInput(sceneActor) )
     sceneActor.tgtCamWsX, sceneActor.tgtCamWsY = spriteActor.rect.topleft
     
     # TESTING

@@ -40,7 +40,7 @@ class BhPlayer(engine.Behavior):
 
         # gravity
         downMov = 100*dt
-        newRect = engine.HELPER.rayCastVertical(self.actor.rect,downMov)
+        newRect = engine.HELPER.raycastDown(self.actor.rect,downMov)
 
         # horiz mov
         moved=False        

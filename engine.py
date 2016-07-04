@@ -57,6 +57,9 @@ class Actor(object):
 class HELPER:
     EASE_LINEAR = 0
     COLLIDERS=Set(range(992,1003))
+    RECTFLAGS_ALL = 0
+    RECTFLAGS_VERTICAL = 1
+    RECTFLAGS_HORIZONTAL = 2
     
     @staticmethod
     def easeCompute(): 
@@ -127,19 +130,26 @@ class HELPER:
         return HELPER.segmentVsManySegments(seg,rs)
 
     @staticmethod
-    def segmentVsGidRect(seg,gr):
-        rs = HELPER.getGidRectSegments(gr)
+    def segmentVsGidRect(seg,gr,rectflags=0):
+        rs = HELPER.getGidRectSegments(gr,rectflags)
         return HELPER.segmentVsManySegments(seg,rs)
+    
+    @staticmethod
+    def getRectSegments(r,flags=0):
+        if flags == HELPER.RECTFLAGS_ALL:
+            return [ (r.topleft,r.topright), 
+                     (r.topright,r.bottomright), 
+                     (r.bottomright,r.bottomleft), 
+                     (r.bottomleft, r.topleft) ]
+        elif flags == HELPER.RECTFLAGS_HORIZONTAL:
+            return [ (r.topleft,r.topright),
+                     (r.bottomright,r.bottomleft) ]
+        elif flags == HELPER.RECTFLAGS_VERTICAL:
+            return [ (r.topright,r.bottomright),
+                     (r.bottomleft, r.topleft) ]
 
     @staticmethod
-    def getRectSegments(r):
-        return [ (r.topleft,r.topright), 
-                (r.topright,r.bottomright), 
-                (r.bottomright,r.bottomleft), 
-                (r.bottomleft, r.topleft) ]
-
-    @staticmethod
-    def getGidRectSegments(gr):
+    def getGidRectSegments(gr,rectflags=0):
         gid, r = gr[0], Rect(gr[1])
         if gid==997:
             l = [ (r.bottomleft, r.topright) ]
@@ -154,7 +164,7 @@ class HELPER:
         elif gid==1002:
             l = [ (r.midleft, r.bottomright) ]
         else:
-            l = HELPER.getRectSegments(r)
+            l = HELPER.getRectSegments(r,rectflags)
         return l
 
     @staticmethod
@@ -182,15 +192,17 @@ class HELPER:
                 if isect else (0,0)
     
     @staticmethod
-    def rayCastVertical(r,dy):
+    def raycastDown(r,dy):
         isect,mint = False, 10
-        segs = [ ( r.bottomleft, (r.left,r.bottom+dy) ),
-            ( r.bottomright, (r.right, r.bottom+dy) ) ]
+        ceildy=dy#math.ceil(dy)
+        segs = [ ( (r.left,r.bottom), (r.left,r.bottom+ceildy) ),
+            ( (r.centerx,r.bottom), (r.centerx,r.bottom+ceildy) ),
+            ( (r.right,r.bottom), (r.right, r.bottom+ceildy) ) ]
         for j in range(0,len(segs)):
             seg = segs[j]
             lgr = Engine.scene.getCollGidsInSegment(seg)
             for gr in lgr:
-                i, t = HELPER.segmentVsGidRect(seg,gr)
+                i, t = HELPER.segmentVsGidRect(seg,gr,HELPER.RECTFLAGS_HORIZONTAL)
                 if i and t < mint:
                     isect, mint = True, t
         
@@ -218,12 +230,13 @@ class HELPER:
             seg = segs[j]
             lgr = Engine.scene.getCollGidsInSegment(seg)
             for gr in lgr:
-                i, t = HELPER.segmentVsGidRect(seg,gr)
+                i, t = HELPER.segmentVsGidRect(seg,gr,HELPER.RECTFLAGS_VERTICAL)
                 if i and t < mint:
                     isect, mint = True, t
         
         newRect = Rect(srcRect)
-        dx = dx*mint if isect else dx
+        #use this epsilon to avoid roundup problems and penetration
+        dx = dx*(mint-0.005) if isect else dx
         newRect.move_ip(dx,0)
         return newRect
 

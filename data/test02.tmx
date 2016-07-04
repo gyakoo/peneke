@@ -2,7 +2,7 @@
 <map version="1.0" orientation="orthogonal" width="90" height="20" tilewidth="16" tileheight="16">
  <tileset firstgid="1" name="base" tilewidth="16" tileheight="16">
   <image source="tileset256.png" trans="00ffff" width="512" height="512"/>
- </tileset> 
+ </tileset>
  <layer name="draw0" width="90" height="20">
   <data>
    <tile gid="2"/>
@@ -1808,7 +1808,7 @@
   </data>
  </layer>
  <objectgroup name="objects" width="90" height="20">
-  <object name="initspawn" x="80" y="160" width="16" height="16"/>
+  <object name="initspawn" x="560" y="160" width="16" height="16"/>
  </objectgroup>
  <layer name="collision" width="90" height="20">
   <data>

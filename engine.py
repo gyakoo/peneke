@@ -151,20 +151,7 @@ class HELPER:
     @staticmethod
     def getGidRectSegments(gr,rectflags=0):
         gid, r = gr[0], Rect(gr[1])
-        if gid==997:
-            l = [ (r.bottomleft, r.topright) ]
-        elif gid==998:
-            l = [ (r.topleft, r.bottomright) ]
-        elif gid==999:
-            l = [ (r.bottomleft, r.midright) ]
-        elif gid==1000:
-            l = [ (r.midleft, r.topright) ]
-        elif gid==1001:
-            l = [ (r.topleft, r.midright) ]
-        elif gid==1002:
-            l = [ (r.midleft, r.bottomright) ]
-        else:
-            l = HELPER.getRectSegments(r,rectflags)
+        l = HELPER.getRectSegments(r,rectflags)
         return l
 
     @staticmethod
@@ -192,9 +179,10 @@ class HELPER:
                 if isect else (0,0)
     
     @staticmethod
-    def raycastDown(r,dy):
+    def raycastDown(srcRect,dy):
         isect,mint = False, 10
-        ceildy=dy#math.ceil(dy)
+        ceildy=dy
+        r=Rect(srcRect)
         segs = [ ( (r.left,r.bottom), (r.left,r.bottom+ceildy) ),
             ( (r.centerx,r.bottom), (r.centerx,r.bottom+ceildy) ),
             ( (r.right,r.bottom), (r.right, r.bottom+ceildy) ) ]
@@ -206,17 +194,15 @@ class HELPER:
                 if i and t < mint:
                     isect, mint = True, t
         
-        newRect = Rect(r)
+        newRect = Rect(srcRect)
         dy = dy*mint if isect else dy
-        newRect.move_ip(0,dy)
-        #newRect.move_ip( -dx/abs(dx) if dx else 0, -dy/abs(dy) if dy else 0 )
+        newRect.move_ip(0,dy)        
         return newRect
 
     @staticmethod
     def rayCastMov(srcRect,dx):
         isect,mint = False, 10
         r = srcRect.inflate(0,-2)
-        #r.move_ip(dx/abs(dx),0)
         if dx > 0.0:
             segs = [ ( r.topright, (r.right+dx,r.top) ),
                      ( r.midright, (r.right+dx, r.centery) ),
@@ -235,48 +221,13 @@ class HELPER:
                     isect, mint = True, t
         
         newRect = Rect(srcRect)
-        #use this epsilon to avoid roundup problems and penetration
-        dx = dx*(mint-0.005) if isect else dx
+        dx = dx*(mint) if isect else dx
         newRect.move_ip(dx,0)
         return newRect
 
     @staticmethod
     def collideAsRect(src,dst):
         return dst
-
-    '''
-    @staticmethod
-    def rectVsRect(src,dst,otherRect):
-        i,t,p = HELPER.getClosestIntersection(src,dst,otherRect)
-        if not i: return dst
-        dx,dy = dst.x-src.x, dst.y-src.y  
-        newRect = Rect(src)
-        newRect.x += dx*t
-        newRect.y += dy*t
-        return newRect
-
-    @staticmethod
-    def rectVsGidRects(src,dst,gidRects):
-        c,mint=False,10
-        for gr in gidRects:
-            i,t,p = HELPER.getClosestIntersection(src,dst,gr[1])
-            if i and t < mint:
-                c,mint= True,t
-        if not c: return dst
-        dx,dy = dst.x-src.x, dst.y-src.y  
-        newRect = Rect(src)
-        newRect.move_ip(dx*mint,dy*mint)
-        newRect.move_ip( -dx/abs(dx) if dx else 0, -dy/abs(dy) if dy else 0 )
-        return newRect
-
-    @staticmethod
-    def collideAsRect(src,dst):
-        expanded = src.union(dst)
-        gidRects = Engine.scene.getCollGidsInAabb(expanded)
-        return HELPER.rectVsGidRects(src,dst,gidRects)
-    '''
-
-        
 
 # --------------------------------------------------------
 class Engine:

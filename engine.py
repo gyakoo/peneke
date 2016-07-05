@@ -642,7 +642,7 @@ class BhSceneCameraFollowActor(Behavior):
         if abs(difY) > 6:
             #if difY < 0 : difY = min(-LIMIT_SP,difY)
             #else: difY = max(LIMIT_SP,difY)
-            self.actor.camWsY += difY*8.0*dt
+            self.actor.camWsY += difY*1.0*dt
 
 # --------------------------------------------------------
 class BhSceneCameraScrollByInput(Behavior):
@@ -681,10 +681,7 @@ class AcScene(Actor):
         #self.camWsX = max(self.camWsX,self.vrHalfX)         
 
     def draw(self):
-        if Engine.debug:
-            self.drawLayer([AcScene.LAYER_COLLISION])
-        else:
-            self.drawLayer([AcScene.LAYER_FOREGROUND]) 
+        self.drawLayers()
         super(AcScene,self).draw()
         # test GUI
         h = (self.vrTh-1)*self.th
@@ -706,8 +703,8 @@ class AcScene(Actor):
 
     def fromTsToGid(self,layerNdx,tsX,tsY):
         '''Transform from Tile Space indices coordinates to Gid'''
-        w, h = self.tile_map.width, self.tile_map.height
-        if tsX<0 or tsY<0 or tsX>=w or tsY>=h: 
+        w,h = self.tile_map.width, self.tile_map.height
+        if tsX < 0 or tsX >= w or tsY<0 or tsY>=h:
             return 0
         layer = self.tile_map.layers[layerNdx]
         return layer.data[tsY][tsX]
@@ -747,27 +744,32 @@ class AcScene(Actor):
         if not gid: return gid
         return self.tile_map.tiledgidmap[gid]-1
         
-    def drawLayer(self,layers):
+    def drawLayers(self):
         images = self.tile_map.images        
         tw,th = self.tw, self.th
+        width, height = self.tile_map.width, self.tile_map.height
         vr = self.engine.virtualRes
         tlWsX, tlWsY = self.camWsX-self.vrHalfX, self.camWsY-self.vrHalfY
         startTsX, startTsY = self.fromWsToTs(tlWsX, tlWsY)
-        ox, oy = tlWsX % tw, tlWsY % th
-        ox = -ox
-        oy = -oy
+        SCR = self.engine.SCREEN
+        ox, oy = -(tlWsX % tw), -(tlWsY % th)
         r = Rect( ox, oy, tw, th )
         tsY = startTsY
+        layerdata0 = self.tile_map.layers[0].data
+        if Engine.debug: layerdata1 = self.tile_map.layers[1].data
         for iY in range(0,self.vrTh):
-            tsX = startTsX
-            r.x = ox
-            for iX in range(0,self.vrTw):
-                for layerNdx in layers:
-                    gid = self.fromTsToGid(layerNdx,tsX,tsY)
-                    if gid:
-                        self.engine.SCREEN.blit(images[gid], r)
-                r.x += tw
-                tsX += 1
+            if tsY>=0 and tsY<height:
+                tsX = startTsX
+                r.x = ox
+                for iX in range(0,self.vrTw):
+                    inbound = tsX<width and tsX >=0
+                    gid = layerdata0[tsY][tsX] if inbound else 0
+                    if gid: SCR.blit(images[gid], r)
+                    if Engine.debug: 
+                        gid = layerdata1[tsY][tsX] if inbound else 0
+                        if gid: SCR.blit(images[gid], r)
+                    r.x += tw
+                    tsX += 1
             tsY += 1
             r.y += th
 

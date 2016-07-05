@@ -30,15 +30,18 @@ class TestActor(engine.Actor):
 
 # --------------------------------------------------------
 class BhPlayer(engine.Behavior):
-    MAXVY = 20.0
+    MAXVY = 12.0
     JUMPTIME = 0.20
+    PLWIDTH = 12
     def __init__(self,actor):
         super(BhPlayer,self).__init__(actor)        
         self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
-        self.actor.rect.size = (16,16)
+        self.actor.rect.size = (BhPlayer.PLWIDTH,16)
         self.vx, self.vy = 0.0, 0.0
         self.t = 0.0
         self.jumping = 0.0
+        self.landed = 0.0
+        self.jumpReleased = True
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
@@ -51,11 +54,13 @@ class BhPlayer(engine.Behavior):
             c, newRect = engine.HELPER.raycastDown(self.actor.rect,downMov)
             if c:
                 self.vy, self.t = 5.0, 0.1
+                self.landed += dt
             else:
                 self.t += dt
+                self.landed = 0.0
         else: # jumping
             j = 1.0 - self.jumping/BhPlayer.JUMPTIME
-            j = math.pow(j,0.1)
+            j = math.pow(j,0.2)
             self.vy = -350.0 *j* dt
             upMov = self.vy
             c, newRect = engine.HELPER.raycastUp(self.actor.rect, upMov)
@@ -83,11 +88,13 @@ class BhPlayer(engine.Behavior):
     def startFalling(self):
         self.jumping = 0.0
         self.vy, self.t = 5.0, 0.0
+        self.landed = 0.0
 
     def jump(self):
-        if self.jumping <= 0.0:
+        if self.jumping <= 0.0 and self.landed > 0.0 and self.jumpReleased:
             self.jumping = BhPlayer.JUMPTIME
-
+            self.landed = 0.0
+            self.jumpReleased = False
 
     def keyUp(self,key):
         if key == pygame.K_SPACE:
@@ -95,6 +102,8 @@ class BhPlayer(engine.Behavior):
         elif key == pygame.K_v:
             self.actor.rect.top -= 70
             self.startFalling()
+        elif key == pygame.K_LCTRL:
+            self.jumpReleased = True
         
 
 
@@ -117,7 +126,8 @@ if __name__ == '__main__':
     # SPRITE
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayer(spriteActor) )
-    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", [(0,0,16,16), (16,0,16,16)], 6.0) )
+    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", 
+                        [(0,0,BhPlayer.PLWIDTH,16), (16,0,BhPlayer.PLWIDTH,16)], 6.0) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
 

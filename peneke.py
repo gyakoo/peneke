@@ -32,11 +32,11 @@ class TestActor(engine.Actor):
 class BhPlayer(engine.Behavior):
     MAXVY = 12.0
     JUMPTIME = 0.20
-    PLWIDTH = 12
+    PLWIDTH,PLHEIGHT = 10,14
     def __init__(self,actor):
         super(BhPlayer,self).__init__(actor)        
         self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
-        self.actor.rect.size = (BhPlayer.PLWIDTH,16)
+        self.actor.rect.size = (BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)
         self.vx, self.vy = 0.0, 0.0
         self.t = 0.0
         self.jumping = 0.0
@@ -99,13 +99,12 @@ class BhPlayer(engine.Behavior):
     def keyUp(self,key):
         if key == pygame.K_SPACE:
             self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
+            engine.Engine.scene.spawnCamera()
         elif key == pygame.K_v:
             self.actor.rect.top -= 70
             self.startFalling()
         elif key == pygame.K_LCTRL:
             self.jumpReleased = True
-        
-
 
 
 # --------------------------------------------------------
@@ -127,7 +126,7 @@ if __name__ == '__main__':
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayer(spriteActor) )
     spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", 
-                        [(0,0,BhPlayer.PLWIDTH,16), (16,0,BhPlayer.PLWIDTH,16)], 6.0) )
+                        [(0,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT), (16,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)], 6.0) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
 

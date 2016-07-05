@@ -715,6 +715,9 @@ class AcScene(Actor):
                 return o.x, o.y
         return 0,0
 
+    def spawnCamera(self):
+        None
+
     def fromTsToTileRect(self,tsX,tsY):
         w,h=self.tw,self.th
         return (tsX*w, tsY*h, w, h)

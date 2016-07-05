@@ -209,7 +209,29 @@ class HELPER:
         newRect = Rect(srcRect)
         dy = dy*mint if isect else dy
         newRect.move_ip(0,dy)        
-        return newRect
+        return isect, newRect
+
+    @staticmethod
+    def raycastUp(srcRect,dy):
+        isect,mint = False, 10
+        ceildy=dy
+        r=Rect(srcRect).inflate(-2,0)
+        segs = [ ( r.topleft,  (r.left,r.top+ceildy) ),
+                 ( r.midtop,  (r.centerx,r.top+ceildy) ),
+                 ( r.topright, (r.right, r.top+ceildy) ) ]
+        for j in range(0,len(segs)):
+            seg = segs[j]
+            lgr = Engine.scene.getCollGidsInSegment(seg)
+            for gr in lgr:
+                if gr[0] == 993: continue
+                i, t = HELPER.segmentVsGidRect(seg,gr,HELPER.RECTFLAGS_HORIZONTAL)
+                if i and t < mint:
+                    isect, mint = True, t
+        
+        newRect = Rect(srcRect)
+        dy = dy*mint if isect else dy
+        newRect.move_ip(0,dy)        
+        return isect, newRect
 
     @staticmethod
     def rayCastMov(srcRect,dx):
@@ -595,7 +617,7 @@ class BhMoveTo(Behavior):
 
 # --------------------------------------------------------
 class BhSceneCameraFollowActor(Behavior):
-    SCROLL_LIMIT_SP = 120.0
+    #SCROLL_LIMIT_SP = 120.0
     def __init__(self,sceneActor,targetActor):
         super(BhSceneCameraFollowActor,self).__init__(sceneActor)
         self.targetActor = targetActor
@@ -620,7 +642,7 @@ class BhSceneCameraFollowActor(Behavior):
         if abs(difY) > 6:
             #if difY < 0 : difY = min(-LIMIT_SP,difY)
             #else: difY = max(LIMIT_SP,difY)
-            self.actor.camWsY += difY*4.0*dt       
+            self.actor.camWsY += difY*8.0*dt
 
 # --------------------------------------------------------
 class BhSceneCameraScrollByInput(Behavior):

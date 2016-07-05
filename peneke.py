@@ -30,17 +30,41 @@ class TestActor(engine.Actor):
 
 # --------------------------------------------------------
 class BhPlayer(engine.Behavior):
+    MAXVY = 20.0
+    JUMPTIME = 0.20
     def __init__(self,actor):
         super(BhPlayer,self).__init__(actor)        
         self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
         self.actor.rect.size = (16,16)
+        self.vx, self.vy = 0.0, 0.0
+        self.t = 0.0
+        self.jumping = 0.0
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
 
         # gravity
-        downMov = 100*dt
-        newRect = engine.HELPER.raycastDown(self.actor.rect,downMov)
+        if self.jumping<=0.0:
+            self.vy += 8.0*self.t
+            self.vy = min(self.vy, BhPlayer.MAXVY)
+            downMov = self.vy*self.t + self.t*self.t
+            c, newRect = engine.HELPER.raycastDown(self.actor.rect,downMov)
+            if c:
+                self.vy, self.t = 5.0, 0.1
+            else:
+                self.t += dt
+        else: # jumping
+            j = 1.0 - self.jumping/BhPlayer.JUMPTIME
+            j = math.pow(j,0.1)
+            self.vy = -350.0 *j* dt
+            upMov = self.vy
+            c, newRect = engine.HELPER.raycastUp(self.actor.rect, upMov)
+            if c:
+                self.startFalling() # has collided with something
+            else:
+                self.jumping -= dt
+                if self.jumping <= 0.0: # end of jump
+                    self.startFalling()
 
         # horiz mov
         moved=False        
@@ -49,18 +73,29 @@ class BhPlayer(engine.Behavior):
         elif keys[K_RIGHT]: 
             moved, dx = True, 160*dt
 
+        if keys[K_LCTRL]:
+            self.jump()
         if moved:
             newRect = engine.HELPER.rayCastMov(newRect,dx)
 
         self.actor.rect = Rect(newRect)
+
+    def startFalling(self):
+        self.jumping = 0.0
+        self.vy, self.t = 5.0, 0.0
+
+    def jump(self):
+        if self.jumping <= 0.0:
+            self.jumping = BhPlayer.JUMPTIME
+
 
     def keyUp(self,key):
         if key == pygame.K_SPACE:
             self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
         elif key == pygame.K_v:
             self.actor.rect.top -= 70
-        elif key == pygame.K_LCTRL:
-            None
+            self.startFalling()
+        
 
 
 

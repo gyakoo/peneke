@@ -33,6 +33,7 @@ class BhPlayer(engine.Behavior):
     MAXVY = 10.0
     JUMPTIME = 0.25
     PLWIDTH,PLHEIGHT = 10,14
+    VX = 160.0
     def __init__(self,actor):
         super(BhPlayer,self).__init__(actor)        
         self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
@@ -52,11 +53,11 @@ class BhPlayer(engine.Behavior):
         # horiz mov
         moved=False        
         if keys[K_LEFT] or (gp and gp.get_axis(0)<-0.2): 
-            moved, dx = True, -160*dt
+            moved, dx = True, -BhPlayer.VX*dt
         elif keys[K_RIGHT] or (gp and gp.get_axis(0)>0.2): 
-            moved, dx = True, 160*dt
+            moved, dx = True, BhPlayer.VX*dt
 
-        # jumping control        
+        # jumping control
         newPressedJump = keys[K_LCTRL] or (gp and gp.get_button(0))
         if self.pressedJump:
             if self.jumping < BhPlayer.JUMPTIME:
@@ -82,7 +83,7 @@ class BhPlayer(engine.Behavior):
             downMov = self.vy*self.t + self.t*self.t
             c, newRect = engine.HELPER.raycastDown(self.actor.rect,max(1,downMov))
             if c:
-                self.vy, self.t = 5.0, 0.1
+                self.vy, self.t = 0.0, 0.0
                 self.landed += dt   
             else:
                 self.t += dt
@@ -107,7 +108,7 @@ class BhPlayer(engine.Behavior):
 
     def startFalling(self):
         self.jumping = BhPlayer.JUMPTIME
-        self.vy, self.t = 5.0, 0.0
+        self.vy, self.t = 0.0, 0.0
         self.landed = 0.0
 
     def spawn(self):

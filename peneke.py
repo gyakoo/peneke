@@ -30,8 +30,8 @@ class TestActor(engine.Actor):
 
 # --------------------------------------------------------
 class BhPlayer(engine.Behavior):
-    MAXVY = 12.0
-    JUMPTIME = 0.20
+    MAXVY = 10.0
+    JUMPTIME = 0.25
     PLWIDTH,PLHEIGHT = 10,14
     def __init__(self,actor):
         super(BhPlayer,self).__init__(actor)        
@@ -39,38 +39,16 @@ class BhPlayer(engine.Behavior):
         self.actor.rect.size = (BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)
         self.vx, self.vy = 0.0, 0.0
         self.t = 0.0
-        self.jumping = 0.0
+        self.jumping = BhPlayer.JUMPTIME
         self.landed = 0.0
-        self.jumpReleased = True
+        self.pressedJump = False
+        self.oldc = 0
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
         gp = engine.Engine.instance.getGamepad(0)
-        # gravity
-        if self.jumping<=0.0:
-            self.vy += 8.0*self.t
-            self.vy = min(self.vy, BhPlayer.MAXVY)
-            downMov = self.vy*self.t + self.t*self.t
-            c, newRect = engine.HELPER.raycastDown(self.actor.rect,downMov)
-            if c:
-                self.vy, self.t = 5.0, 0.1
-                self.landed += dt
-            else:
-                self.t += dt
-                self.landed = 0.0
-        else: # jumping
-            j = 1.0 - self.jumping/BhPlayer.JUMPTIME
-            j = math.pow(j,0.2)
-            self.vy = -350.0 *j* dt
-            upMov = self.vy
-            c, newRect = engine.HELPER.raycastUp(self.actor.rect, upMov)
-            if c:
-                self.startFalling() # has collided with something
-            else:
-                self.jumping -= dt
-                if self.jumping <= 0.0: # end of jump
-                    self.startFalling()
-
+        
+        # -- INPUT --
         # horiz mov
         moved=False        
         if keys[K_LEFT] or (gp and gp.get_axis(0)<-0.2): 
@@ -78,38 +56,70 @@ class BhPlayer(engine.Behavior):
         elif keys[K_RIGHT] or (gp and gp.get_axis(0)>0.2): 
             moved, dx = True, 160*dt
 
-        if keys[K_LCTRL] or (gp and gp.get_button(0)):
-            self.jump()
-        
-        if gp and not gp.get_button(0):
-            self.jumpReleased = True
+        # jumping control        
+        newPressedJump = keys[K_LCTRL] or (gp and gp.get_button(0))
+        if self.pressedJump:
+            if self.jumping < BhPlayer.JUMPTIME:
+                if not newPressedJump: # was jumping and just released
+                    self.startFalling()
+                else: # was and is jumping
+                    self.jumping += dt
+                    if self.jumping > BhPlayer.JUMPTIME:
+                        self.startFalling()
+        elif self.landed > 0.0:
+            if newPressedJump : # was not jumping but just pressed it
+                self.jumping = 0.0
+                self.landed = 0.0
 
+        self.pressedJump = newPressedJump
+
+        # -- UPDATE --
+        falling = self.jumping>=BhPlayer.JUMPTIME
+        if falling:
+            # gravity
+            self.vy += 5.0*self.t
+            self.vy = min(self.vy, BhPlayer.MAXVY)
+            downMov = self.vy*self.t + self.t*self.t
+            c, newRect = engine.HELPER.raycastDown(self.actor.rect,max(1,downMov))
+            if c:
+                self.vy, self.t = 5.0, 0.1
+                self.landed += dt   
+            else:
+                self.t += dt
+                self.landed = 0.0
+        else: 
+            # jumping
+            j = self.jumping/BhPlayer.JUMPTIME
+            upMov = -400.0 * dt * (1.0-j)
+            c, newRect = engine.HELPER.raycastUp(self.actor.rect, upMov)
+            if c:
+                self.startFalling() # has collided with something
+
+
+        # collision
         if moved:
             newRect = engine.HELPER.rayCastMov(newRect,dx)
-
         self.actor.rect = Rect(newRect)
+        
+        # out of bounds
+        if self.actor.rect.bottom > 500:
+            self.spawn()
 
     def startFalling(self):
-        self.jumping = 0.0
+        self.jumping = BhPlayer.JUMPTIME
         self.vy, self.t = 5.0, 0.0
         self.landed = 0.0
 
-    def jump(self):
-        if self.jumping <= 0.0 and self.landed > 0.0 and self.jumpReleased:
-            self.jumping = BhPlayer.JUMPTIME
-            self.landed = 0.0
-            self.jumpReleased = False
+    def spawn(self):
+        self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
+        engine.Engine.scene.spawnCamera()
 
     def keyUp(self,key):
         if key == pygame.K_SPACE:
-            self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
-            engine.Engine.scene.spawnCamera()
+            self.spawn()            
         elif key == pygame.K_v:
             self.actor.rect.top -= 70
             self.startFalling()
-        elif key == pygame.K_LCTRL:
-            self.jumpReleased = True
-
 
 # --------------------------------------------------------
 # Entry point, only when executed, not imported

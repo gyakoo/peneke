@@ -33,7 +33,6 @@
     <Compile Include="util_pygame.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="data\tileset.png" />
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>

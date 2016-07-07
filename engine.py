@@ -273,6 +273,9 @@ class Engine:
     def __init__(self,name,vres,pres,fullscreen=False,depth=8):
         '''Builds the Engine'''
         pygame.init()
+        pygame.joystick.init()
+        self.gamepads = []
+        self.updateGamepads()
         BEHAVIORS.engine = self
         self.name = name
         self.clock = pygame.time.Clock()
@@ -303,6 +306,15 @@ class Engine:
         if fullscreen: 
             pygame.mouse.set_visible(0)
 
+    def updateGamepads(self):
+        if pygame.joystick.get_count() != len(self.gamepads):
+            for gp in self.gamepads: gp.quit()
+            self.gamepads = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+            for gp in self.gamepads: gp.init()
+
+    def getGamepad(self,index):
+        return self.gamepads[index] if index < len(self.gamepads) else None
+
     def addActor(self,a):
         '''Registers an actor in the game. an actor must be subclass of Actor'''
         self.actors.append(a)
@@ -312,6 +324,7 @@ class Engine:
         for a in self.actors:
             a.destroy()
         self.actors = []
+        pygame.joystick.quit()
         pygame.quit()    
 
     def loadFont(self,fontname,size):
@@ -394,6 +407,7 @@ class Engine:
         '''Updates the engine state'''
         # Update fps stats
         if self.showFPS:
+            self.updateGamepads()
             self.atfps += dt
             if self.atfps > 3.0:
                 pygame.display.set_caption(self.name + " fps: " + str(int(self.clock.get_fps())))

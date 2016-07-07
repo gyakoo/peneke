@@ -45,7 +45,7 @@ class BhPlayer(engine.Behavior):
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
-
+        gp = engine.Engine.instance.getGamepad(0)
         # gravity
         if self.jumping<=0.0:
             self.vy += 8.0*self.t
@@ -73,13 +73,17 @@ class BhPlayer(engine.Behavior):
 
         # horiz mov
         moved=False        
-        if keys[K_LEFT]: 
+        if keys[K_LEFT] or (gp and gp.get_axis(0)<-0.2): 
             moved, dx = True, -160*dt
-        elif keys[K_RIGHT]: 
+        elif keys[K_RIGHT] or (gp and gp.get_axis(0)>0.2): 
             moved, dx = True, 160*dt
 
-        if keys[K_LCTRL]:
+        if keys[K_LCTRL] or (gp and gp.get_button(0)):
             self.jump()
+        
+        if gp and not gp.get_button(0):
+            self.jumpReleased = True
+
         if moved:
             newRect = engine.HELPER.rayCastMov(newRect,dx)
 

@@ -32,18 +32,23 @@ class TestActor(engine.Actor):
 class BhPlayer(engine.Behavior):
     MAXVY = 10.0
     JUMPTIME = 0.25
-    PLWIDTH,PLHEIGHT = 10,14
+    PLCOLLWIDTH, PLCOLLHEIGHT = 10,14
+    PLWIDTH,PLHEIGHT = 16,16
     VX = 160.0
     def __init__(self,actor):
         super(BhPlayer,self).__init__(actor)        
-        self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
         self.actor.rect.size = (BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)
+        self.actor.crect = Rect( engine.Engine.scene.getInitSpawn(), (BhPlayer.PLCOLLWIDTH,BhPlayer.PLCOLLHEIGHT) )
         self.vx, self.vy = 0.0, 0.0
         self.t = 0.0
         self.jumping = BhPlayer.JUMPTIME
         self.landed = 0.0
         self.pressedJump = False
-        self.oldc = 0
+        self.updateActorDrawRect()
+
+    def updateActorDrawRect(self):
+        self.actor.rect.top = self.actor.crect.top-2
+        self.actor.rect.left = self.actor.crect.left-3
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
@@ -81,7 +86,7 @@ class BhPlayer(engine.Behavior):
             self.vy += 5.0*self.t
             self.vy = min(self.vy, BhPlayer.MAXVY)
             downMov = self.vy*self.t + self.t*self.t
-            c, newRect = engine.HELPER.raycastDown(self.actor.rect,max(1,downMov))
+            c, newRect = engine.HELPER.raycastDown(self.actor.crect,max(1,downMov))
             if c:
                 self.vy, self.t = 0.0, 0.0
                 self.landed += dt   
@@ -92,7 +97,7 @@ class BhPlayer(engine.Behavior):
             # jumping
             j = self.jumping/BhPlayer.JUMPTIME
             upMov = -400.0 * dt * (1.0-j)
-            c, newRect = engine.HELPER.raycastUp(self.actor.rect, upMov)
+            c, newRect = engine.HELPER.raycastUp(self.actor.crect, upMov)
             if c:
                 self.startFalling() # has collided with something
 
@@ -100,11 +105,13 @@ class BhPlayer(engine.Behavior):
         # collision
         if moved:
             newRect = engine.HELPER.rayCastMov(newRect,dx)
-        self.actor.rect = Rect(newRect)
+        self.actor.crect = Rect(newRect)
         
         # out of bounds
-        if self.actor.rect.bottom > 500:
+        if self.actor.crect.bottom > 500:
             self.spawn()
+
+        self.updateActorDrawRect()
 
     def startFalling(self):
         self.jumping = BhPlayer.JUMPTIME
@@ -112,14 +119,14 @@ class BhPlayer(engine.Behavior):
         self.landed = 0.0
 
     def spawn(self):
-        self.actor.rect.topleft = engine.Engine.scene.getInitSpawn()
+        self.actor.crect.topleft = engine.Engine.scene.getInitSpawn()
         engine.Engine.scene.spawnCamera()
 
     def keyUp(self,key):
         if key == pygame.K_SPACE:
             self.spawn()            
         elif key == pygame.K_v:
-            self.actor.rect.top -= 70
+            self.actor.crect.top -= 70
             self.startFalling()
 
 # --------------------------------------------------------
@@ -128,7 +135,7 @@ class BhPlayer(engine.Behavior):
 if __name__ == '__main__':
     # Initialize engine and actors
     virtualRes = (480,320)
-    resFactor = 2
+    resFactor = 2.5
     fullscreen = False
     engineObj = engine.Engine( "Peneke", virtualRes, (int(virtualRes[0]*resFactor),int(virtualRes[1]*resFactor)), fullscreen)
     engineObj.showFPS = True
@@ -140,8 +147,8 @@ if __name__ == '__main__':
     # SPRITE
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayer(spriteActor) )
-    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tileset_char.png", 
-                        [(0,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT), (16,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)], 6.0) )
+    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tilesetchar256.png", 
+                        [(0,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT), (16,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)], 8.0, (0,255,255)) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
 

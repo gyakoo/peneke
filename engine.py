@@ -792,9 +792,10 @@ class AcScene(Actor):
 
 # --------------------------------------------------------
 class BhSpriteAnim(Behavior):
-    def __init__(self,actor,imgName, rects,fps):
+    def __init__(self,actor,imgName, rects,fps, colorkey=None):
         super(BhSpriteAnim,self).__init__(actor)
         self.actor.img = self.actor.engine.loadImage(imgName)
+        self.actor.img.set_colorkey(colorkey)
         self.actor.area = rects
         self.actor.areaIndex = 0
         self.period = 1.0/fps

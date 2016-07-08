@@ -1,8 +1,17 @@
 # Peneke
-Peneke game.
+Classic platformer.
 
-Adventure game. Very little of RPG.
-http://www.aharrisbooks.net/pythonGame/Appendix_C.pdf
+# To Do/ Change
+* ~~Colorkeys~~
+* Flip sprite
+* Select animations. Player animation.
+* Change location of tmx tileset image to data/images 
+
+# Bugs
+* Collisions sometimes penetrates, not enough rays casted? Curr. 3 per rect movement.
+
+# References
+* Distributing modules and programs in Python: http://www.aharrisbooks.net/pythonGame/Appendix_C.pdf
 
 # Ideas
 * Conducir vehículo

@@ -33,7 +33,7 @@ class BhPlayer(engine.Behavior):
     MAXVY = 10.0
     JUMPTIME = 0.25
     PLCOLLWIDTH, PLCOLLHEIGHT = 14,14
-    VX = 160.0
+    VX = 150.0 # if >=125 then moves 2 pixels per frame
     def __init__(self,actor, size):
         super(BhPlayer,self).__init__(actor)        
         self.actor.rect.size = size

@@ -32,12 +32,11 @@ class TestActor(engine.Actor):
 class BhPlayer(engine.Behavior):
     MAXVY = 10.0
     JUMPTIME = 0.25
-    PLCOLLWIDTH, PLCOLLHEIGHT = 10,14
-    PLWIDTH,PLHEIGHT = 16,16
+    PLCOLLWIDTH, PLCOLLHEIGHT = 14,14
     VX = 160.0
-    def __init__(self,actor):
+    def __init__(self,actor, size):
         super(BhPlayer,self).__init__(actor)        
-        self.actor.rect.size = (BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)
+        self.actor.rect.size = size
         self.actor.crect = Rect( engine.Engine.scene.getInitSpawn(), (BhPlayer.PLCOLLWIDTH,BhPlayer.PLCOLLHEIGHT) )
         self.vx, self.vy = 0.0, 0.0
         self.t = 0.0
@@ -45,10 +44,12 @@ class BhPlayer(engine.Behavior):
         self.landed = 0.0
         self.pressedJump = False
         self.updateActorDrawRect()
+        self.wasMoving = False
+        self.wasInAir = True
 
     def updateActorDrawRect(self):
         self.actor.rect.top = self.actor.crect.top-2
-        self.actor.rect.left = self.actor.crect.left-3
+        self.actor.rect.left = self.actor.crect.left-1
 
     def update(self,dt):
         keys = engine.Engine.instance.KEYPRESSED
@@ -81,6 +82,7 @@ class BhPlayer(engine.Behavior):
 
         # -- UPDATE --
         falling = self.jumping>=BhPlayer.JUMPTIME
+        inAir = falling
         if falling:
             # gravity
             self.vy += 5.0*self.t
@@ -90,28 +92,40 @@ class BhPlayer(engine.Behavior):
             if c:
                 self.vy, self.t = 0.0, 0.0
                 self.landed += dt   
+                inAir=False
             else:
                 self.t += dt
                 self.landed = 0.0
         else: 
             # jumping
+            inAir=True
             j = self.jumping/BhPlayer.JUMPTIME
             upMov = -400.0 * dt * (1.0-j)
             c, newRect = engine.HELPER.raycastUp(self.actor.crect, upMov)
             if c:
                 self.startFalling() # has collided with something
 
-
         # collision
         if moved:
-            newRect = engine.HELPER.rayCastMov(newRect,dx)
-        self.actor.crect = Rect(newRect)
+            newRect = engine.HELPER.rayCastMov(newRect,dx)        
+
+        # animation control
+        if inAir:
+            self.actor.message("ANIM","jump")
+        elif moved:
+            self.actor.message("ANIM","run")            
+        elif self.wasMoving or self.wasInAir:
+            self.actor.message("ANIM","idle")
         
+        # finally update collision rect! (and cache some states)
+        self.actor.crect = Rect(newRect) # !!
+        self.updateActorDrawRect()
+        self.wasMoving = moved
+        self.wasInAir = inAir
+
         # out of bounds
         if self.actor.crect.bottom > 500:
             self.spawn()
-
-        self.updateActorDrawRect()
 
     def startFalling(self):
         self.jumping = BhPlayer.JUMPTIME
@@ -133,22 +147,25 @@ class BhPlayer(engine.Behavior):
 # Entry point, only when executed, not imported
 # --------------------------------------------------------
 if __name__ == '__main__':
-    # Initialize engine and actors
+    # Some config
     virtualRes = (480,320)
-    resFactor = 2.5
+    resFactor = 3
     fullscreen = False
+    playerSize = (16,16)
+    sceneTiles = (30,16)
+
+    # Initialize engine and actors
     engineObj = engine.Engine( "Peneke", virtualRes, (int(virtualRes[0]*resFactor),int(virtualRes[1]*resFactor)), fullscreen)
     engineObj.showFPS = True
 
     # SCENE
-    sceneActor = engine.AcScene("data/test02.tmx",engineObj,(30,16))
+    sceneActor = engine.AcScene("data/test02.tmx",engineObj,sceneTiles)
     engineObj.addActor( sceneActor )
 
     # SPRITE
     spriteActor = engine.Actor(engineObj)
-    spriteActor.addBehavior( BhPlayer(spriteActor) )
-    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tilesetchar256.png", 
-                        [(0,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT), (16,0,BhPlayer.PLWIDTH,BhPlayer.PLHEIGHT)], 8.0, (0,255,255)) )
+    spriteActor.addBehavior( BhPlayer(spriteActor,playerSize) )
+    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tilesetchar256.png", "char.anim", (0,255,255) ) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
 

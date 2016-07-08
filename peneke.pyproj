@@ -33,10 +33,12 @@
     <Compile Include="util_pygame.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="data\anims\char.anim" />
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="data" />
+    <Folder Include="data\" />
+    <Folder Include="data\anims\" />
     <Folder Include="pytmx" />
   </ItemGroup>
   <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />

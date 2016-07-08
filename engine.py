@@ -22,6 +22,7 @@ class Behavior(object):
     def draw(self): None
     def destroy(self): None
     def keyUp(self,key): None
+    def message(self,id,data): None
 
 # -------------------------------------------------------
 class Actor(object):
@@ -31,6 +32,7 @@ class Actor(object):
         self.markForDestroy = False
         self.behaviors = []
         self.img = None
+        self.anim = None
         self.rect, self.area = Rect(0,0,0,0), None
         self.alpha = 255
         self.imgIndex = -1
@@ -49,6 +51,8 @@ class Actor(object):
             self.behaviors.remove(b)
     def draw(self):        
         for b in self.behaviors: b.draw()
+    def message(self,id,data):
+        for b in self.behaviors: b.message(id,data)
     def destroy(self): 
         for b in self.behaviors: b.destroy()
         self.behaviors = []
@@ -282,7 +286,7 @@ class Engine:
         self.virtualRes, self.physicalRes = vres, pres
         self.scaling = vres != pres
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
-        self.SCRATCHSURFCACHE = {}
+        self.SCRATCHSURFCACHE, self.ANIMCACHE = {}, {}
         self.KEYPRESSED = None
         self.fullscreen = fullscreen
         flags = pygame.DOUBLEBUF
@@ -300,6 +304,7 @@ class Engine:
         self.pathToFonts = "data/fonts/"
         self.pathToSounds= "data/sounds/"
         self.pathToImages= "data/images/"
+        self.pathToAnims = "data/anims/"
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
         self.bgColor = (0,0,0)
         Engine.instance = self
@@ -327,6 +332,22 @@ class Engine:
         pygame.joystick.quit()
         pygame.quit()    
 
+    def loadAnim(self,animname):
+        anim = None
+        if not self.ANIMCACHE.has_key(animname):
+            path = self.pathToAnims+animname
+            with open(path,'r') as file:
+                try:
+                    anim = eval(file.read())
+                except:
+                    print "ERR - Animation not valid:", animname
+                    anim = None
+                if anim:
+                    self.ANIMCACHE[animname]=anim
+        else:
+            anim = self.ANIMCACHE[animname]
+        return anim
+
     def loadFont(self,fontname,size):
         '''Loads and caches a font handle'''        
         key = (fontname,size)
@@ -351,7 +372,7 @@ class Engine:
                     fullname = fullname + ".wav"
                 sound = pygame.mixer.Sound(fullname)
             except pygame.error, message:
-                print 'Cannot load sound:', name
+                print "ERR - Cannot load sound:", name
             if sound:
                 self.SOUNDCACHE[name] = sound
         else:
@@ -569,7 +590,7 @@ class BhDestroyBehavior(Behavior):
 #----------------------------------------------------------------------
 class BhSequence(Behavior):
     def __init__(self,actor,seq):
-        assert seq
+        assert seq, "Invalid sequence"
         super(BhSequence,self).__init__(actor)
         self.sequence = seq
         self.index = 0
@@ -792,14 +813,29 @@ class AcScene(Actor):
 
 # --------------------------------------------------------
 class BhSpriteAnim(Behavior):
-    def __init__(self,actor,imgName, rects,fps, colorkey=None):
+    def __init__(self,actor,imgName,animName,colorkey=None):
         super(BhSpriteAnim,self).__init__(actor)
+        self.actor.anim = self.actor.engine.loadAnim(animName)
+        assert self.actor.anim, "No animation found"
         self.actor.img = self.actor.engine.loadImage(imgName)
+        assert self.actor.img, "No image found"
         self.actor.img.set_colorkey(colorkey)
-        self.actor.area = rects
-        self.actor.areaIndex = 0
-        self.period = 1.0/fps
-        self.t = self.period
+        self.curAnim = None
+        self.t = 1000.0
+        self.setAnim("idle")
+
+    def setAnim(self,name):      
+        if name==self.curAnim: return
+        if name in self.actor.anim:
+            animtuple = self.actor.anim[name]
+            self.actor.area = animtuple[0]
+            self.actor.areaIndex = 0
+            if len(self.actor.area)==1 or animtuple[1]<=0.0:
+                self.period=1000.0
+            else:
+                self.period = 1.0 / animtuple[1]
+            self.t = self.period
+            self.curAnim = name
 
     def update(self,dt):
         self.t -= dt
@@ -807,13 +843,17 @@ class BhSpriteAnim(Behavior):
             self.actor.areaIndex = (self.actor.areaIndex + 1 ) % len(self.actor.area)
             self.t += self.period
 
+    def message(self,id,data):
+        if id == "ANIM":
+            self.setAnim(data)
+
 #----------------------------------------------------------------------
 class BEHAVIORS:
     engine = None
 
     @staticmethod
     def createText(text,topleft,fontname="type_writer.ttf",size=14):
-        assert BEHAVIORS.engine
+        assert BEHAVIORS.engine, "Engine not initialized"
         a = Actor(BEHAVIORS.engine)
         a.addBehavior(BhText(a,text,topleft,fontname,size))
         a.addBehavior(BhSequence(a,

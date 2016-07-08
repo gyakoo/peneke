@@ -18,7 +18,3 @@ Classic platformer.
 * Juego de cartas o algo así
 * Tendrás que defender una fortaleza de un ataque
 * Grupo de niño-monstruos haciendo una hoguera en el passage al mundo monstruo
-
-
-
-

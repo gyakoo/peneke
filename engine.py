@@ -31,7 +31,8 @@ class Actor(object):
         self.engine = engine
         self.markForDestroy = False
         self.behaviors = []
-        self.img = None
+        self.img, self.imgFlipX = None, None
+        self.flipX = False
         self.anim = None
         self.rect, self.area = Rect(0,0,0,0), None
         self.alpha = 255
@@ -495,7 +496,7 @@ class BhBlit(Behavior):
         #HELPER.blitAlpha(tgt,src,tl,a,a)
 
     def draw(self):
-        img = self.actor.img
+        img = self.actor.imgFlipX if (self.actor.flipX or not self.actor.imgFlipX) else self.actor.img
         r = self.actor.rect
         ai = self.actor.areaIndex        
         srcRect = self.actor.area if ai==-1 else self.actor.area[ai]
@@ -812,14 +813,17 @@ class AcScene(Actor):
             r.y += th
 
 # --------------------------------------------------------
-class BhSpriteAnim(Behavior):
+class BhSprite(Behavior):
     def __init__(self,actor,imgName,animName,colorkey=None):
-        super(BhSpriteAnim,self).__init__(actor)
+        super(BhSprite,self).__init__(actor)
         self.actor.anim = self.actor.engine.loadAnim(animName)
         assert self.actor.anim, "No animation found"
         self.actor.img = self.actor.engine.loadImage(imgName)
         assert self.actor.img, "No image found"
+        self.actor.imgFlipX = self.actor.engine.loadImage("fx_"+imgName)        
         self.actor.img.set_colorkey(colorkey)
+        if self.actor.imgFlipX:
+            self.actor.imgFlipX.set_colorkey(colorkey)
         self.curAnim = None
         self.t = 1000.0
         self.setAnim("idle")

@@ -107,13 +107,17 @@ class BhPlayer(engine.Behavior):
 
         # collision
         if moved:
-            newRect = engine.HELPER.rayCastMov(newRect,dx)        
+            newRect = engine.HELPER.rayCastMov(newRect,dx)
+            self.actor.flipX = dx < 0.0
 
         # animation control
         if inAir:
             self.actor.message("ANIM","jump")
         elif moved:
-            self.actor.message("ANIM","run")            
+            if self.wasInAir:
+                self.actor.message("ANIM","runlanded")
+            else:
+                self.actor.message("ANIM","run")
         elif self.wasMoving or self.wasInAir:
             self.actor.message("ANIM","idle")
         
@@ -165,7 +169,7 @@ if __name__ == '__main__':
     # SPRITE
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayer(spriteActor,playerSize) )
-    spriteActor.addBehavior( engine.BhSpriteAnim(spriteActor, "tilesetchar256.png", "char.anim", (0,255,255) ) )
+    spriteActor.addBehavior( engine.BhSprite(spriteActor, "tilesetchar256.png", "char.anim", (0,255,255) ) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
 

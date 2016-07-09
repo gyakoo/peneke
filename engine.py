@@ -78,12 +78,14 @@ class HELPER:
     @staticmethod
     def surfaceFlipX(img,w,h):        
         r = img.get_rect()
+        ckey = img.get_colorkey()
+        img.set_colorkey(None)
         target = pygame.Surface( r.size, 0, img )
         target.set_palette(img.get_palette())
-        target.set_colorkey(img.get_colorkey())
+        #target.set_colorkey(img.get_colorkey())
         tmp = pygame.Surface( (w,h), 0, img)
         tmp.set_palette(img.get_palette())
-        tmp.set_colorkey(img.get_colorkey())
+        #tmp.set_colorkey(img.get_colorkey())
         ix, iy = r.width/w, r.height/h
         dst = pygame.Rect(0,0,w,h)
         r.topleft = (0,0)
@@ -96,6 +98,9 @@ class HELPER:
                 target.blit(tmp,r)
                 r.left += w
             r.top += h
+        target.set_colorkey(ckey)
+        img.set_colorkey(ckey)
+        #pygame.image.save(target,"hello.png")
         return target
 
     @staticmethod

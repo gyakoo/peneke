@@ -70,14 +70,33 @@ class HELPER:
     RECTFLAGS_HORIZONTAL = 2
     
     @staticmethod
-    def easeCompute(): 
-        return 1.0
-
-    @staticmethod
     def clamp(x,m,M):
         if   x < m : return m
         elif x > M : return M
         return x
+
+    @staticmethod
+    def surfaceFlipX(img,w,h):        
+        r = img.get_rect()
+        target = pygame.Surface( r.size, 0, img )
+        target.set_palette(img.get_palette())
+        target.set_colorkey(img.get_colorkey())
+        tmp = pygame.Surface( (w,h), 0, img)
+        tmp.set_palette(img.get_palette())
+        tmp.set_colorkey(img.get_colorkey())
+        ix, iy = r.width/w, r.height/h
+        dst = pygame.Rect(0,0,w,h)
+        r.topleft = (0,0)
+        r.size = (w,h)
+        for y in range(0,iy):
+            r.left = 0
+            for x in range(0,ix):
+                tmp.blit(img, dst,r)
+                tmp = pygame.transform.flip(tmp,True,False)
+                target.blit(tmp,r)
+                r.left += w
+            r.top += h
+        return target
 
     @staticmethod
     def blitAlpha(target, source, location, opacity, area=None):
@@ -407,6 +426,19 @@ class Engine:
             if flipx or flipy:
                 img = pygame.transform.flip(img, flipx, flipy)
             self.IMAGECACHE[key] = img
+        return self.IMAGECACHE[key]
+
+    def loadImageFlipX(self,file,size):
+        '''Loads and caches a flipped image per tile'''
+        flipname = file + "_fx"
+        key = (flipname,0,False,False)
+        if not self.IMAGECACHE.has_key(key):
+            img = self.loadImage(file)
+            target = None
+            if img:
+                w,h = size
+                target = HELPER.surfaceFlipX(img,w,h)
+            self.IMAGECACHE[key] = target
         return self.IMAGECACHE[key]
         
     def playSound(self,name,vol=1.0):
@@ -812,18 +844,24 @@ class AcScene(Actor):
             tsY += 1
             r.y += th
 
+class SpriteSheet:
+    def __init__(self,imgName,createFlipX,tilesize,colorkey=None):
+        self.img, self.imgFlipX = None, None
+        self.img = Engine.instance.loadImage(imgName)
+        if self.img:
+            self.img.set_colorkey(colorkey)
+        if createFlipX and self.img:
+            self.imgFlipX = Engine.instance.loadImageFlipX(imgName,tilesize)            
+        
 # --------------------------------------------------------
 class BhSprite(Behavior):
-    def __init__(self,actor,imgName,animName,colorkey=None):
+    def __init__(self,actor,spritesheet,animName):
         super(BhSprite,self).__init__(actor)
         self.actor.anim = self.actor.engine.loadAnim(animName)
         assert self.actor.anim, "No animation found"
-        self.actor.img = self.actor.engine.loadImage(imgName)
-        assert self.actor.img, "No image found"
-        self.actor.imgFlipX = self.actor.engine.loadImage("fx_"+imgName)        
-        self.actor.img.set_colorkey(colorkey)
-        if self.actor.imgFlipX:
-            self.actor.imgFlipX.set_colorkey(colorkey)
+        assert spritesheet.img, "No image found"
+        self.actor.img = spritesheet.img
+        self.actor.imgFlipX = spritesheet.imgFlipX
         self.curAnim = None
         self.t = 1000.0
         self.setAnim("idle")

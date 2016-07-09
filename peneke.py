@@ -29,18 +29,18 @@ class TestActor(engine.Actor):
 
 
 # --------------------------------------------------------
-class BhPlayer(engine.Behavior):
+class BhPlayerPlatformer(engine.Behavior):
     MAXVY = 10.0
     JUMPTIME = 0.25
     PLCOLLWIDTH, PLCOLLHEIGHT = 14,14
     VX = 150.0 # if >=125 then moves 2 pixels per frame
     def __init__(self,actor, size):
-        super(BhPlayer,self).__init__(actor)        
+        super(BhPlayerPlatformer,self).__init__(actor)        
         self.actor.rect.size = size
-        self.actor.crect = Rect( engine.Engine.scene.getInitSpawn(), (BhPlayer.PLCOLLWIDTH,BhPlayer.PLCOLLHEIGHT) )
+        self.actor.crect = Rect( engine.Engine.scene.getInitSpawn(), (BhPlayerPlatformer.PLCOLLWIDTH,BhPlayerPlatformer.PLCOLLHEIGHT) )
         self.vx, self.vy = 0.0, 0.0
         self.t = 0.0
-        self.jumping = BhPlayer.JUMPTIME
+        self.jumping = BhPlayerPlatformer.JUMPTIME
         self.landed = 0.0
         self.pressedJump = False
         self.updateActorDrawRect()
@@ -59,19 +59,19 @@ class BhPlayer(engine.Behavior):
         # horiz mov
         moved=False        
         if keys[K_LEFT] or (gp and gp.get_axis(0)<-0.2): 
-            moved, dx = True, -BhPlayer.VX*dt
+            moved, dx = True, -BhPlayerPlatformer.VX*dt
         elif keys[K_RIGHT] or (gp and gp.get_axis(0)>0.2): 
-            moved, dx = True, BhPlayer.VX*dt
+            moved, dx = True, BhPlayerPlatformer.VX*dt
 
         # jumping control
         newPressedJump = keys[K_LCTRL] or (gp and gp.get_button(0))
         if self.pressedJump:
-            if self.jumping < BhPlayer.JUMPTIME:
+            if self.jumping < BhPlayerPlatformer.JUMPTIME:
                 if not newPressedJump: # was jumping and just released
                     self.startFalling()
                 else: # was and is jumping
                     self.jumping += dt
-                    if self.jumping > BhPlayer.JUMPTIME:
+                    if self.jumping > BhPlayerPlatformer.JUMPTIME:
                         self.startFalling()
         elif self.landed > 0.0:
             if newPressedJump : # was not jumping but just pressed it
@@ -81,12 +81,12 @@ class BhPlayer(engine.Behavior):
         self.pressedJump = newPressedJump
 
         # -- UPDATE --
-        falling = self.jumping>=BhPlayer.JUMPTIME
+        falling = self.jumping>=BhPlayerPlatformer.JUMPTIME
         inAir = falling
         if falling:
             # gravity
             self.vy += 5.0*self.t
-            self.vy = min(self.vy, BhPlayer.MAXVY)
+            self.vy = min(self.vy, BhPlayerPlatformer.MAXVY)
             downMov = self.vy*self.t + self.t*self.t
             c, newRect = engine.HELPER.raycastDown(self.actor.crect,max(1,downMov))
             if c:
@@ -99,7 +99,7 @@ class BhPlayer(engine.Behavior):
         else: 
             # jumping
             inAir=True
-            j = self.jumping/BhPlayer.JUMPTIME
+            j = self.jumping/BhPlayerPlatformer.JUMPTIME
             upMov = -400.0 * dt * (1.0-j)
             c, newRect = engine.HELPER.raycastUp(self.actor.crect, upMov)
             if c:
@@ -132,7 +132,7 @@ class BhPlayer(engine.Behavior):
             self.spawn()
 
     def startFalling(self):
-        self.jumping = BhPlayer.JUMPTIME
+        self.jumping = BhPlayerPlatformer.JUMPTIME
         self.vy, self.t = 0.0, 0.0
         self.landed = 0.0
 
@@ -153,10 +153,11 @@ class BhPlayer(engine.Behavior):
 if __name__ == '__main__':
     # Some config
     virtualRes = (480,320)
-    resFactor = 3
+    resFactor = 2
     fullscreen = False
-    playerSize = (16,16)
+    playerSize = tileSize = (16,16)
     sceneTiles = (30,16)
+    colorKey = (0,255,255)
 
     # Initialize engine and actors
     engineObj = engine.Engine( "Peneke", virtualRes, (int(virtualRes[0]*resFactor),int(virtualRes[1]*resFactor)), fullscreen)
@@ -167,9 +168,10 @@ if __name__ == '__main__':
     engineObj.addActor( sceneActor )
 
     # SPRITE
+    spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,tileSize,colorKey)
     spriteActor = engine.Actor(engineObj)
-    spriteActor.addBehavior( BhPlayer(spriteActor,playerSize) )
-    spriteActor.addBehavior( engine.BhSprite(spriteActor, "tilesetchar256.png", "char.anim", (0,255,255) ) )
+    spriteActor.addBehavior( BhPlayerPlatformer(spriteActor,playerSize) )
+    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "char.anim" ) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
 

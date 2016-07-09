@@ -13,7 +13,10 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId />
     <InterpreterVersion />
-    <IsWindowsApplication>True</IsWindowsApplication>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <CommandLineArguments>
+    </CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -34,7 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="data\anims\char.anim" />
-    <Content Include="README.md" />
+    <Content Include="todo.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="data\" />

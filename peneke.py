@@ -24,13 +24,13 @@ class TestActor(engine.Actor):
     def draw(self):
         r = self.a.get_rect()
         r.topleft = (400,200)
-        engine.HELPER.blitAlpha(self.engine.SCREEN,self.a,(40,20),int(self.alpha))
+        engine.HELPER.blitAlpha(self.engine.SCREENVIRTUAL,self.a,(40,20),int(self.alpha))
         engine.HELPER.drawRect((10,10,24,24), (0,255,0,255))
 
 
 # --------------------------------------------------------
 class BhPlayerPlatformer(engine.Behavior):
-    MAXVY = 10.0
+    MAXVY = 8.0
     JUMPTIME = 0.25
     PLCOLLWIDTH, PLCOLLHEIGHT = 14,14
     VX = 150.0 # if >=125 then moves 2 pixels per frame
@@ -154,26 +154,32 @@ if __name__ == '__main__':
     # Some config
     virtualRes = (480,320)
     resFactor = 2
-    fullscreen = False
+    fullscreen = True
     playerSize = tileSize = (16,16)
     sceneTiles = (30,16)
     colorKey = (0,255,255)
 
-    # Initialize engine and actors
-    engineObj = engine.Engine( "Peneke", virtualRes, (int(virtualRes[0]*resFactor),int(virtualRes[1]*resFactor)), fullscreen)
+    # Initialize engine and actors    
+    if not fullscreen:
+        physRes = (int(virtualRes[0]*resFactor),int(virtualRes[1]*resFactor))
+    else:
+        physRes = (1024,768)
+        
+    engineObj = engine.Engine( "Peneke", virtualRes, physRes, fullscreen)
     engineObj.showFPS = True
 
-    # SCENE
     sceneActor = engine.AcScene("data/test02.tmx",engineObj,sceneTiles)
-    engineObj.addActor( sceneActor )
 
     # SPRITE
     spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,tileSize,colorKey)
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayerPlatformer(spriteActor,playerSize) )
-    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "char.anim" ) )
+    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "slug.anim" ) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
+
+    # SCENE
+    engineObj.addActor( sceneActor )
 
     # scene follow camera
     sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )

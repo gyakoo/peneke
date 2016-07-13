@@ -8,6 +8,7 @@ from pygame.locals import *
 import pytmx
 import util_pygame
 from util_pygame import *
+import gc
 
 assert pygame.font
 assert pygame.mixer
@@ -119,11 +120,11 @@ class HELPER:
         if ws:
             top,left = Engine.scene.fromWsToSs(r[0],r[1])
             r = (top,left,r[2],r[3])
-        pygame.draw.rect(Engine.instance.SCREEN, color, r, w)
+        pygame.draw.rect(Engine.instance.SCREENVIRTUAL, color, r, w)
 
     @staticmethod
     def blit(source,dstRect,area=None):
-        Engine.instance.SCREEN.blit( source, dstRect, area)
+        Engine.instance.SCREENVIRTUAL.blit( source, dstRect, area)
 
     @staticmethod
     def segmentVsSegment(a,b):
@@ -191,6 +192,10 @@ class HELPER:
             l = [ (r.topleft, r.bottomleft) ]
         elif gid == 996L:
             l = [ (r.topright, r.bottomright) ]
+        elif gid == 997L:
+            r.inflate_ip(0,-4)
+            r.top += 2
+            l = HELPER.getRectSegments(r,rectflags)
         else:
             l = HELPER.getRectSegments(r,rectflags)
         return l
@@ -309,7 +314,7 @@ class Engine:
         self.name = name
         self.clock = pygame.time.Clock()
         self.virtualRes, self.physicalRes = vres, pres
-        self.scaling = vres != pres
+        self.scaling = vres != pres or fullscreen
         self.IMAGECACHE, self.SOUNDCACHE, self.FONTCACHE = {}, {}, {}
         self.SCRATCHSURFCACHE, self.ANIMCACHE = {}, {}
         self.KEYPRESSED = None
@@ -318,10 +323,14 @@ class Engine:
         if fullscreen: 
             flags = flags | pygame.FULLSCREEN | pygame.HWSURFACE
         bestdepth = pygame.display.mode_ok(self.physicalRes, flags, depth)
-        self.FINALSCREEN = pygame.display.set_mode(self.physicalRes, flags, bestdepth)
-        self.SCREEN = pygame.Surface(self.virtualRes,flags,bestdepth) if self.scaling else self.FINALSCREEN
-        if self.scaling:
-            self.SCREEN.set_palette( self.FINALSCREEN.get_palette() )
+        self.SCREENBUFFER = pygame.display.set_mode(self.physicalRes, flags, bestdepth)
+        self.SCREENVIRTUAL = pygame.Surface(self.virtualRes,flags,bestdepth) if self.scaling else self.SCREENBUFFER
+        if fullscreen and vres[0]*2<pres[0] and vres[1]*2<pres[1]:
+            self.SCREENVIRTUALX2 = pygame.Surface( (vres[0]*2,vres[1]*2), flags, bestdepth )
+        else:
+            self.SCREENVIRTUALX2 = None
+        if self.scaling and not fullscreen:
+            self.SCREENVIRTUAL.set_palette( self.SCREENBUFFER.get_palette() )
         pygame.display.set_caption(name)
         self.atfps, self.nextSound = 0.0, 0.0        
         self.actors, self.actorsToDestroy = [], []
@@ -333,8 +342,12 @@ class Engine:
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
         self.bgColor = (0,0,0)
         Engine.instance = self
-        if fullscreen: 
+        if fullscreen:
             pygame.mouse.set_visible(0)
+            if self.SCREENVIRTUALX2:
+                self.fullscreenTopleft = (pres[0]/2-vres[0], pres[1]/2-vres[1])
+            else:
+                self.fullscreenTopleft = (pres[0]/2-vres[0]/2, pres[1]/2-vres[1]/2)
 
     def updateGamepads(self):
         if pygame.joystick.get_count() != len(self.gamepads):
@@ -459,7 +472,15 @@ class Engine:
         for a in self.actors:
             a.draw()
         if self.scaling:
-            pygame.transform.scale(self.SCREEN, self.physicalRes, self.FINALSCREEN)
+            if self.fullscreen:
+                if self.SCREENVIRTUALX2:
+                    x2 = (self.virtualRes[0]*2, self.virtualRes[1]*2)
+                    pygame.transform.scale(self.SCREENVIRTUAL, x2, self.SCREENVIRTUALX2)
+                    self.SCREENBUFFER.blit(self.SCREENVIRTUALX2, self.fullscreenTopleft)
+                else:
+                    self.SCREENBUFFER.blit(self.SCREENVIRTUAL, self.fullscreenTopleft)
+            else:
+                pygame.transform.scale(self.SCREENVIRTUAL, self.physicalRes, self.SCREENBUFFER)
         pygame.display.flip()
                    
     def update(self,dt):
@@ -508,7 +529,7 @@ class Engine:
             self.KEYPRESSED = pygame.key.get_pressed()
             if self.KEYPRESSED[K_ESCAPE]: break
             nextkey -= dt
-            self.SCREEN.fill(self.bgColor)
+            self.SCREENVIRTUAL.fill(self.bgColor)
             self.update(dt)
             self.draw()
 
@@ -538,7 +559,7 @@ class BhBlit(Behavior):
         ai = self.actor.areaIndex        
         srcRect = self.actor.area if ai==-1 else self.actor.area[ai]
         if not img or not r: return
-        SCR = self.actor.engine.SCREEN
+        SCR = self.actor.engine.SCREENVIRTUAL
         ii = self.actor.imgIndex
         alpha = self.actor.alpha
         blitFunc = self._blitFuncOp if alpha==255 else self._blitFuncAl
@@ -690,7 +711,6 @@ class BhMoveTo(Behavior):
 
 # --------------------------------------------------------
 class BhSceneCameraFollowActor(Behavior):
-    #SCROLL_LIMIT_SP = 120.0
     def __init__(self,sceneActor,targetActor):
         super(BhSceneCameraFollowActor,self).__init__(sceneActor)
         self.targetActor = targetActor
@@ -707,15 +727,11 @@ class BhSceneCameraFollowActor(Behavior):
     def updateSmooth(self,dt):
         difX = self.actor.tgtCamWsX-self.actor.camWsX 
         difY = self.actor.tgtCamWsY-self.actor.camWsY
-        #LIMIT_SP = BhSceneCameraFollowActor.SCROLL_LIMIT_SP
         if abs(difX) > 6:
-            #if difX < 0 : difX = min(-LIMIT_SP,difX)
-            #else: difX = max(LIMIT_SP,difX)
             self.actor.camWsX += difX*3.0*dt
         if abs(difY) > 6:
-            #if difY < 0 : difY = min(-LIMIT_SP,difY)
-            #else: difY = max(LIMIT_SP,difY)
-            self.actor.camWsY += difY*1.0*dt
+            f = 1.0 if difY<0.0 else 10.0
+            self.actor.camWsY += difY*f*dt
 
 # --------------------------------------------------------
 class BhSceneCameraScrollByInput(Behavior):
@@ -748,6 +764,8 @@ class AcScene(Actor):
             self.vrTw,self.vrTh = tilesCount[0]+1, tilesCount[1]+1
         else:
             self.vrTw, self.vrTh = vr[0]/self.tw+1, vr[1]/self.th+1
+        gc.collect()
+        gc.collect()
 
     def update(self,dt):
         super(AcScene,self).update(dt)
@@ -759,9 +777,8 @@ class AcScene(Actor):
         # test GUI
         h = (self.vrTh-1)*self.th
         r = Rect(0,h,(self.vrTw-1)*self.tw,Engine.instance.virtualRes[1]-h)        
-        HELPER.drawRect(r, (40,40,200))
-        pygame.draw.rect(self.engine.SCREEN,(30,30,160),r)
-        pygame.draw.rect(self.engine.SCREEN,(200,200,200),r,1)
+        pygame.draw.rect(self.engine.SCREENVIRTUAL,(30,30,160),r)
+        pygame.draw.rect(self.engine.SCREENVIRTUAL,(200,200,200),r,1)
 
     def fromWsToSs(self,wsX,wsY):
         '''Transform from world space pixel coords to screen space pixel coords'''
@@ -827,7 +844,7 @@ class AcScene(Actor):
         vr = self.engine.virtualRes
         tlWsX, tlWsY = self.camWsX-self.vrHalfX, self.camWsY-self.vrHalfY
         startTsX, startTsY = self.fromWsToTs(tlWsX, tlWsY)
-        SCR = self.engine.SCREEN
+        SCR = self.engine.SCREENVIRTUAL
         ox, oy = -(tlWsX % tw), -(tlWsY % th)
         r = Rect( ox, oy, tw, th )
         tsY = startTsY

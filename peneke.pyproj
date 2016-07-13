@@ -13,7 +13,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId />
     <InterpreterVersion />
-    <IsWindowsApplication>False</IsWindowsApplication>
+    <IsWindowsApplication>True</IsWindowsApplication>
     <CommandLineArguments>
     </CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
@@ -36,7 +36,8 @@
     <Compile Include="util_pygame.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="data\anims\char.anim" />
+    <Content Include="data\anims\fatguy.anim" />
+    <Content Include="data\anims\slug.anim" />
     <Content Include="todo.txt" />
   </ItemGroup>
   <ItemGroup>

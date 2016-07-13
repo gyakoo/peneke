@@ -2,13 +2,9 @@ Classic platformer.
 
 To Do/ Change
 ============
-* ~~Colorkeys~~
-* Flip sprite
-* Select animations. Player animation.
 * Change location of tmx tileset image to data/images 
 * Change actor rect from int Rect to float Rect, because the movement is fixed precision (ex. either 1 or 2 pixels per frame)
-* Camera follower for Y is too slow
-* Tool to make the flipx images!
+
 
 Bugs
 ====

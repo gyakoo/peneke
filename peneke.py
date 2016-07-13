@@ -154,7 +154,7 @@ if __name__ == '__main__':
     # Some config
     virtualRes = (480,320)
     resFactor = 2
-    fullscreen = True
+    fullscreen = False
     playerSize = tileSize = (16,16)
     sceneTiles = (30,16)
     colorKey = (0,255,255)

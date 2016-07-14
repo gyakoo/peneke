@@ -1,0 +1,45 @@
+Diseño
+
+Objetivos
+* Lo más simple posible, tanto para el usuario como para desarrollar
+* Dos botones
+* Humor y suspense/misterio y cosas de miedo de humor!
+
+Historia
+* Moco es un Espíritu (bajo status) que vive en la tierra de los Dioses y 
+	Espíritus.
+* Los Espíritus dependen de los humanos y del mundo real para existir. Los 
+	Dioses no y son de mayor status.
+* Los Dioses y Espíritus son muy variopintos y no todos son agradables.
+* Los Espíritus están desapareciendo del mundo y Moco ha perdido a sus dos 
+	amigos. Debe ir a encontrarlo.
+* Los Dioses no pueden morir sin embargo.
+* En su aventura descubrirá una trama donde los humanos juegan un papel 
+	importante, pero donde los Dioses han trazado un plan para deshacerse 
+	de ellos de una vez por todas (y de los Espíritus también como daño 
+	colateral).
+* Al principio parece ser que los humanos están detras de todo, pero no es 
+	totalmente cierto.
+* Los Espíritus pueden manifestarse en la tierra de los humanos. Los Dioses 
+	no pueden salir de su tierra, solo a través de secuaces.
+
+Habilidades
+* Saltar
+* Disparar/Lanzar
+* Cambiar de acción u objeto a disparar/lanzar
+
+Items
+
+
+ACTO I: Intro y desapariciones
+ACTO II: Dioses buenos, hombres malos
+ACTO III: Revelación
+
+Mundo 1: Tierra espíritu
+	Area 1.A: Bosque 
+	Area 1.B: Cantina
+	Area 1.C: Biblioteca inexplorada
+
+Mundo 2: Tierra de hombres
+	Area A: 
+Mundo 3: Tierra de dioses

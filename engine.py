@@ -711,9 +711,10 @@ class BhMoveTo(Behavior):
 
 # --------------------------------------------------------
 class BhSceneCameraFollowActor(Behavior):
-    def __init__(self,sceneActor,targetActor):
+    def __init__(self,sceneActor,targetActor,smooth=True):
         super(BhSceneCameraFollowActor,self).__init__(sceneActor)
         self.targetActor = targetActor
+        self.updateFunc = self.updateSmooth if smooth else self.updateFix
         self.update(0.016)
         self.actor.camWsX = self.actor.tgtCamWsX
         self.actor.camWsY = self.actor.tgtCamWsY
@@ -721,14 +722,19 @@ class BhSceneCameraFollowActor(Behavior):
     def update(self,dt):
         w,h = self.targetActor.rect.size
         self.actor.tgtCamWsX = self.targetActor.rect.left+w/2
-        self.actor.tgtCamWsY = self.targetActor.rect.top+h/2
-        self.updateSmooth(dt)
+        self.actor.tgtCamWsY = self.targetActor.rect.top+h/2        
+        self.updateFunc(dt)
+
+    def updateFix(self,dt):
+        self.actor.camWsX = self.actor.tgtCamWsX
+        self.actor.camWsY = self.actor.tgtCamWsY
 
     def updateSmooth(self,dt):
         difX = self.actor.tgtCamWsX-self.actor.camWsX 
         difY = self.actor.tgtCamWsY-self.actor.camWsY
-        if abs(difX) > 6:
+        if abs(difX) > 16:
             self.actor.camWsX += difX*3.0*dt
+        
         if abs(difY) > 6:
             f = 1.0 if difY<0.0 else 10.0
             self.actor.camWsY += difY*f*dt

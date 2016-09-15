@@ -30,7 +30,7 @@ class TestActor(engine.Actor):
 
 # --------------------------------------------------------
 class BhPlayerPlatformer(engine.Behavior):
-    MAXVY = 8.0
+    MAXVY = 6.0
     JUMPTIME = 0.25
     PLCOLLWIDTH, PLCOLLHEIGHT = 14,14
     VX = 150.0 # if >=125 then moves 2 pixels per frame
@@ -64,7 +64,7 @@ class BhPlayerPlatformer(engine.Behavior):
             moved, dx = True, BhPlayerPlatformer.VX*dt
 
         # jumping control
-        newPressedJump = keys[K_LCTRL] or (gp and gp.get_button(0))
+        newPressedJump = keys[K_z] or (gp and gp.get_button(0))
         if self.pressedJump:
             if self.jumping < BhPlayerPlatformer.JUMPTIME:
                 if not newPressedJump: # was jumping and just released
@@ -182,7 +182,7 @@ if __name__ == '__main__':
     engineObj.addActor( sceneActor )
 
     # scene follow camera
-    sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor) )
+    sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor,True) )
     #sceneActor.addBehavior( engine.BhSceneCameraScrollByInput(sceneActor) )
     sceneActor.tgtCamWsX, sceneActor.tgtCamWsY = spriteActor.rect.topleft
     

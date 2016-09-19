@@ -340,7 +340,7 @@ class Engine:
         self.pathToImages= "data/images/"
         self.pathToAnims = "data/anims/"
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
-        self.bgColor = (0,0,0)
+        self.bgColor = (51,50,50)
         Engine.instance = self
         if fullscreen:
             pygame.mouse.set_visible(0)
@@ -348,6 +348,34 @@ class Engine:
                 self.fullscreenTopleft = (pres[0]/2-vres[0], pres[1]/2-vres[1])
             else:
                 self.fullscreenTopleft = (pres[0]/2-vres[0]/2, pres[1]/2-vres[1]/2)
+
+    def setFullscreen(self,fs):
+        if fs == self.fullscreen: return
+        self.fullscreen = fs
+        flags = pygame.DOUBLEBUF
+        if self.fullscreen: 
+            flags = flags | pygame.FULLSCREEN | pygame.HWSURFACE            
+            self.physicalRes = (1024,768)
+        vres, pres = self.virtualRes, self.physicalRes
+        self.scaling = vres != pres or self.fullscreen
+        depth = 8
+        bestdepth = pygame.display.mode_ok(self.physicalRes, flags, depth)
+        self.SCREENBUFFER = pygame.display.set_mode(self.physicalRes, flags, bestdepth)
+        self.SCREENVIRTUAL = pygame.Surface(self.virtualRes,flags,bestdepth) if self.scaling else self.SCREENBUFFER
+        if self.fullscreen and vres[0]*2<pres[0] and vres[1]*2<pres[1]:
+            self.SCREENVIRTUALX2 = pygame.Surface( (vres[0]*2,vres[1]*2), flags, bestdepth )
+        else:
+            self.SCREENVIRTUALX2 = None
+        if self.scaling and not self.fullscreen:
+            self.SCREENVIRTUAL.set_palette( self.SCREENBUFFER.get_palette() )
+        if self.fullscreen:
+            pygame.mouse.set_visible(0)
+            if self.SCREENVIRTUALX2:
+                self.fullscreenTopleft = (pres[0]/2-vres[0], pres[1]/2-vres[1])
+            else:
+                self.fullscreenTopleft = (pres[0]/2-vres[0]/2, pres[1]/2-vres[1]/2)
+        gc.collect()
+        gc.collect()
 
     def updateGamepads(self):
         if pygame.joystick.get_count() != len(self.gamepads):
@@ -360,7 +388,11 @@ class Engine:
 
     def addActor(self,a):
         '''Registers an actor in the game. an actor must be subclass of Actor'''
-        self.actors.append(a)
+        if isinstance(a,list):
+            for _a in a:
+                self.actors.append(_a)
+        else:
+            self.actors.append(a)
 
     def destroy(self):        
         '''Deinit the engine'''
@@ -523,6 +555,8 @@ class Engine:
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_F1:
                         Engine.debug = not Engine.debug
+                    elif event.key == pygame.K_F2:
+                        self.setFullscreen( not self.fullscreen )
                     for a in self.actors: 
                         a.keyUp(event.key)
                         
@@ -554,7 +588,7 @@ class BhBlit(Behavior):
         #HELPER.blitAlpha(tgt,src,tl,a,a)
 
     def draw(self):
-        img = self.actor.imgFlipX if (self.actor.flipX or not self.actor.imgFlipX) else self.actor.img
+        img = self.actor.imgFlipX if (self.actor.flipX and self.actor.imgFlipX) else self.actor.img
         r = self.actor.rect
         ai = self.actor.areaIndex        
         srcRect = self.actor.area if ai==-1 else self.actor.area[ai]
@@ -872,6 +906,7 @@ class AcScene(Actor):
             tsY += 1
             r.y += th
 
+# --------------------------------------------------------
 class SpriteSheet:
     def __init__(self,imgName,createFlipX,tilesize,colorkey=None):
         self.img, self.imgFlipX = None, None
@@ -883,7 +918,7 @@ class SpriteSheet:
         
 # --------------------------------------------------------
 class BhSprite(Behavior):
-    def __init__(self,actor,spritesheet,animName):
+    def __init__(self,actor,spritesheet,animName,defAnim="idle"):
         super(BhSprite,self).__init__(actor)
         self.actor.anim = self.actor.engine.loadAnim(animName)
         assert self.actor.anim, "No animation found"
@@ -892,7 +927,10 @@ class BhSprite(Behavior):
         self.actor.imgFlipX = spritesheet.imgFlipX
         self.curAnim = None
         self.t = 1000.0
-        self.setAnim("idle")
+        self.setAnim(defAnim)
+        isSizeZero = not (self.actor.rect.size[0] and self.actor.rect.size[1])
+        if isSizeZero and self.actor.area and self.actor.areaIndex >= 0:
+            self.actor.rect.size = self.actor.area[self.actor.areaIndex][1]
 
     def setAnim(self,name):      
         if name==self.curAnim: return
@@ -930,6 +968,6 @@ class BEHAVIORS:
           [BhMoveTo(a,(100,200),3.0), 
            BhMoveTo(a,(100,300),3.0), 
            BhDestroyActor(a,10)]))
-        a.addBehavior(BhBlit(a,True))
+        a.addBehavior(BhBlit(a,False))
         BEHAVIORS.engine.addActor(a)
 

@@ -11,6 +11,7 @@ Tareas
 * Disparo
   - Sistema de respuesta a impacto por entidades
 * Sistema conversacional
+* .anim colapsados en un solo fichero
 
 
 

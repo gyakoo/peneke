@@ -148,13 +148,26 @@ class BhPlayerPlatformer(engine.Behavior):
             self.startFalling()
 
 # --------------------------------------------------------
+def placeInTile(a,tx,ty):
+    r = engine.Engine.scene.fromTsToTileRect(tx,ty)
+    a.rect.left = r[0]
+    a.rect.bottom = r[1]+16
+
+def createSprite(spriteSheet, anim,animDef,tx,ty):
+    actor = engine.Actor(engineObj)
+    actor.addBehavior( engine.BhSprite(actor, spriteSheet, anim, animDef) )
+    actor.addBehavior( engine.BhBlit(actor,True) )
+    placeInTile(actor,tx,ty)
+    return actor
+
+# --------------------------------------------------------
 # Entry point, only when executed, not imported
 # --------------------------------------------------------
 if __name__ == '__main__':
     # Some config
     virtualRes = (480,320)
     resFactor = 2
-    fullscreen = True
+    fullscreen = False
     playerSize = tileSize = (16,16)
     sceneTiles = (30,16)
     colorKey = (0,255,255)
@@ -187,8 +200,21 @@ if __name__ == '__main__':
     sceneActor.tgtCamWsX, sceneActor.tgtCamWsY = spriteActor.rect.topleft
     
     # TESTING
-    #engine.BEHAVIORS.createText("peneke",(20,300))
+    # ------------------------------------------------------------
+    engine.BEHAVIORS.createText("peneke",(20,300))
     #ENG.addActor( TestActor(ENG) )
+    engineObj.addActor( createSprite(spriteSheet,"erudito.anim","walk",49,12) )
+    for i in range(43,48):
+        if i % 2 == 1 :
+            engineObj.addActor( createSprite(spriteSheet,"child.anim","idle",i,12) )
+    engineObj.addActor( createSprite(spriteSheet,"bush.anim","idle",51,14) )
+    engineObj.addActor( createSprite(spriteSheet,"bird.anim","fly",52,9) )
+    engineObj.addActor( createSprite(spriteSheet,"naboman.anim","idle",55,14) )
+    engineObj.addActor( createSprite(spriteSheet,"babosa.anim","walk",58,14) )
+    engineObj.addActor( createSprite(spriteSheet,"mosquito.anim","fly",60,10) )
+    engineObj.addActor( createSprite(spriteSheet,"carawood.anim","walk",54,11) )
+
+    # ------------------------------------------------------------
 
 
     # Main loop

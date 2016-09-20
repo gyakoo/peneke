@@ -204,7 +204,8 @@ if __name__ == '__main__':
     for i in range(43,48):
         if i % 2 == 1 :
             engineObj.addActor( createSprite(spriteSheet,"child.anim","idle",i,12) )
-    engineObj.addActor( createSprite(spriteSheet,"bush.anim","idle",51,14) )
+    for i in [46,47,49,51]:
+        engineObj.addActor( createSprite(spriteSheet,"bush.anim","idle",i,14) )
     engineObj.addActor( createSprite(spriteSheet,"bird.anim","fly",52,9) )
     engineObj.addActor( createSprite(spriteSheet,"naboman.anim","idle",55,14) )
     engineObj.addActor( createSprite(spriteSheet,"babosa.anim","walk",58,14) )
@@ -215,14 +216,14 @@ if __name__ == '__main__':
     # SCENE
     engineObj.addActor( sceneActor )
 
-    x, y = 100, 256
-    y += engine.BEHAVIORS.createText("Pxlvetica",(x,y), "Pxlvetica.ttf", 16)
-    y += engine.BEHAVIORS.createText("Thin Pixel-7",(x,y), "thin_pixel-7.ttf", 16)
-    y += engine.BEHAVIORS.createText("Typewriter",(x,y), "type_writer.ttf", 8)
-    y += engine.BEHAVIORS.createText("Bitout",(x,y), "bitout.fon", 14)
-    x, y =300, 256
-    y += engine.BEHAVIORS.createText("Computer Pixel-7",(x,y), "computer_pixel-7.ttf", 16)
-
+    x, y = 246, 260
+    # max 29 chars width
+    y += engine.BEHAVIORS.createText("Lorem ipsum dolor sit amet,",(x,y), "PressStart2P.ttf", 8)+3
+    y += engine.BEHAVIORS.createText("consectetur adipiscing elit.",(x,y), "PressStart2P.ttf", 8)+3
+    y += engine.BEHAVIORS.createText("Nulla porta elit erat, vitae",(x,y), "PressStart2P.ttf", 8)+3
+    y += engine.BEHAVIORS.createText("rhoncus odio aliquam nec.",(x,y), "PressStart2P.ttf", 8)+3
+    y += engine.BEHAVIORS.createText("Ut at convallis nisl.",(x,y), "PressStart2P.ttf", 8)+3
+    
     # Main loop
     engineObj.run()
 

@@ -340,7 +340,7 @@ class Engine:
         self.pathToImages= "data/images/"
         self.pathToAnims = "data/anims/"
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
-        self.bgColor = (51,50,50)
+        self.bgColor = (0,0,0)
         Engine.instance = self
         if fullscreen:
             pygame.mouse.set_visible(0)
@@ -814,11 +814,34 @@ class AcScene(Actor):
     def draw(self):
         self.drawLayers()
         super(AcScene,self).draw()
-        # test GUI
+        
+        # gui backg
         h = (self.vrTh-1)*self.th
         r = Rect(0,h,(self.vrTw-1)*self.tw,Engine.instance.virtualRes[1]-h)        
-        pygame.draw.rect(self.engine.SCREENVIRTUAL,(30,30,160),r)
+        #(30,30,160)
+        pygame.draw.rect(self.engine.SCREENVIRTUAL,(0,0,51),r)
         pygame.draw.rect(self.engine.SCREENVIRTUAL,(200,200,200),r,1)
+        
+        # status
+        r.width = 168
+        r.left = 5
+        r.height = 60
+        r.top += 2
+        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(20,20,20),r)
+        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(0,0,0),r,1)
+
+        # char thumb
+        r.left = r.right+4
+        r.width = 60
+        pygame.draw.rect(self.engine.SCREENVIRTUAL,(20,20,20),r)
+        pygame.draw.rect(self.engine.SCREENVIRTUAL,(200,200,200),r,1)
+
+        # conversation text
+        #r.left = r.right+4
+        #r.width= 480-1-4-r.left
+        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(20,20,20),r)
+        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(0,0,0),r,1)
+        
 
     def fromWsToSs(self,wsX,wsY):
         '''Transform from world space pixel coords to screen space pixel coords'''

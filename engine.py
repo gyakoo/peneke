@@ -825,8 +825,8 @@ class AcScene(Actor):
         # status
         r.width = 168
         r.left = 5
-        r.height = 60
-        r.top += 2
+        r.height = 56
+        r.top += 4
         #pygame.draw.rect(self.engine.SCREENVIRTUAL,(20,20,20),r)
         #pygame.draw.rect(self.engine.SCREENVIRTUAL,(0,0,0),r,1)
 

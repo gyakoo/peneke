@@ -960,14 +960,18 @@ class BEHAVIORS:
     engine = None
 
     @staticmethod
-    def createText(text,topleft,fontname="type_writer.ttf",size=14):
+    def createText(text,topleft,fontname="Pxlvetica.ttf",size=16):
         assert BEHAVIORS.engine, "Engine not initialized"
         a = Actor(BEHAVIORS.engine)
         a.addBehavior(BhText(a,text,topleft,fontname,size))
-        a.addBehavior(BhSequence(a,
-          [BhMoveTo(a,(100,200),3.0), 
-           BhMoveTo(a,(100,300),3.0), 
-           BhDestroyActor(a,10)]))
+        '''a.addBehavior(BhSequence(a,
+          [
+           BhMoveTo(a,(100,200),3.0), 
+           BhMoveTo(a,(100,300),3.0) ]) )
+           #,BhDestroyActor(a,10)]))
+        '''
         a.addBehavior(BhBlit(a,False))
         BEHAVIORS.engine.addActor(a)
+        return a.rect.height
+        
 

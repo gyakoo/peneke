@@ -190,9 +190,7 @@ if __name__ == '__main__':
     spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "slug.anim" ) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
-
-    # SCENE
-    engineObj.addActor( sceneActor )
+       
 
     # scene follow camera
     sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor,True) )
@@ -201,7 +199,6 @@ if __name__ == '__main__':
     
     # TESTING
     # ------------------------------------------------------------
-    engine.BEHAVIORS.createText("peneke",(20,300))
     #ENG.addActor( TestActor(ENG) )
     engineObj.addActor( createSprite(spriteSheet,"erudito.anim","walk",49,12) )
     for i in range(43,48):
@@ -215,7 +212,16 @@ if __name__ == '__main__':
     engineObj.addActor( createSprite(spriteSheet,"carawood.anim","walk",54,11) )
 
     # ------------------------------------------------------------
+    # SCENE
+    engineObj.addActor( sceneActor )
 
+    x, y = 100, 256
+    y += engine.BEHAVIORS.createText("Pxlvetica",(x,y), "Pxlvetica.ttf", 16)
+    y += engine.BEHAVIORS.createText("Thin Pixel-7",(x,y), "thin_pixel-7.ttf", 16)
+    y += engine.BEHAVIORS.createText("Typewriter",(x,y), "type_writer.ttf", 8)
+    y += engine.BEHAVIORS.createText("Bitout",(x,y), "bitout.fon", 14)
+    x, y =300, 256
+    y += engine.BEHAVIORS.createText("Computer Pixel-7",(x,y), "computer_pixel-7.ttf", 16)
 
     # Main loop
     engineObj.run()

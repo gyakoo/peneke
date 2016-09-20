@@ -40,6 +40,7 @@
     <Content Include="data\anims\bird.anim" />
     <Content Include="data\anims\bush.anim" />
     <Content Include="data\anims\carawood.anim" />
+    <Content Include="data\anims\characters.anim" />
     <Content Include="data\anims\child.anim" />
     <Content Include="data\anims\erudito.anim" />
     <Content Include="data\anims\mosquito.anim" />

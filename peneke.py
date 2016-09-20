@@ -187,7 +187,7 @@ if __name__ == '__main__':
     spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,tileSize,colorKey)
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayerPlatformer(spriteActor,playerSize) )
-    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "slug.anim" ) )
+    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "characters.anim@slug" ) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
        
@@ -200,17 +200,17 @@ if __name__ == '__main__':
     # TESTING
     # ------------------------------------------------------------
     #ENG.addActor( TestActor(ENG) )
-    engineObj.addActor( createSprite(spriteSheet,"erudito.anim","walk",49,12) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@erudito","walk",49,12) )
     for i in range(43,48):
         if i % 2 == 1 :
-            engineObj.addActor( createSprite(spriteSheet,"child.anim","idle",i,12) )
+            engineObj.addActor( createSprite(spriteSheet,"characters.anim@child","idle",i,12) )
     for i in [46,47,49,51]:
-        engineObj.addActor( createSprite(spriteSheet,"bush.anim","idle",i,14) )
-    engineObj.addActor( createSprite(spriteSheet,"bird.anim","fly",52,9) )
-    engineObj.addActor( createSprite(spriteSheet,"naboman.anim","idle",55,14) )
-    engineObj.addActor( createSprite(spriteSheet,"babosa.anim","walk",58,14) )
-    engineObj.addActor( createSprite(spriteSheet,"mosquito.anim","fly",60,10) )
-    engineObj.addActor( createSprite(spriteSheet,"carawood.anim","walk",54,11) )
+        engineObj.addActor( createSprite(spriteSheet,"characters.anim@bush","idle",i,14) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@bird","fly",52,9) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@naboman","idle",55,14) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@babosa","walk",58,14) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@mosquito","fly",60,10) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@carawood","walk",54,11) )
 
     # ------------------------------------------------------------
     # SCENE

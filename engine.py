@@ -405,10 +405,12 @@ class Engine:
     def loadAnim(self,animname):
         anim = None
         if not self.ANIMCACHE.has_key(animname):
-            path = self.pathToAnims+animname
+            l = animname.split("@")
+            path = self.pathToAnims+l[0]
             with open(path,'r') as file:
                 try:
-                    anim = eval(file.read())
+                    allanims = eval(file.read())
+                    anim = allanims if len(l)==1 else allanims[l[1]]
                 except:
                     print "ERR - Animation not valid:", animname
                     anim = None

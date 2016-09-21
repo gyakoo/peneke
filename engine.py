@@ -297,6 +297,25 @@ class HELPER:
     def collideAsRect(src,dst):
         return dst
 
+    @staticmethod
+    def paragraphIntoLines(pg,maxCharsPerLine,maxLines):
+        words = pg.split()
+        lines=[]
+        l = ""
+        for w in words:
+            if not w: continue
+            if len(l)+len(w)>maxCharsPerLine:
+                lines += [l]                
+                if len(lines) == maxLines: break
+                l = ""
+            if len(l)+len(w)<=maxCharsPerLine:
+                l += w
+                if len(l)+1<=maxCharsPerLine:
+                    l += " "                
+        if not lines and l:
+            lines += [l]
+        return lines
+
 # --------------------------------------------------------
 class Engine:
     instance = None
@@ -310,7 +329,6 @@ class Engine:
         pygame.joystick.init()
         self.gamepads = []
         self.updateGamepads()
-        BEHAVIORS.engine = self
         self.name = name
         self.clock = pygame.time.Clock()
         self.virtualRes, self.physicalRes = vres, pres
@@ -375,7 +393,7 @@ class Engine:
             else:
                 self.fullscreenTopleft = (pres[0]/2-vres[0]/2, pres[1]/2-vres[1]/2)
         gc.collect()
-        gc.collect()
+        gc.collect()        
 
     def updateGamepads(self):
         if pygame.joystick.get_count() != len(self.gamepads):
@@ -636,6 +654,7 @@ class BhText(Behavior):
 
     def setFont(self,fontName,size):
         self.font = self.actor.engine.loadFont(fontName,size)
+        self.actor.fontWidth = size
         if self.text:
             self.setText(self.text)
 
@@ -653,6 +672,28 @@ class BhText(Behavior):
             self.actor.img = self.font.render(text,False,self.actor.color)
             self.actor.rect.size = self.actor.img.get_rect().size
 
+#----------------------------------------------------------------------
+class BhTextExpandAnim(Behavior):
+    def __init__(self,actor,charTime=0.1):
+        super(BhTextExpandAnim,self).__init__(actor)
+        self.actor.area = Rect(0,0,0,self.actor.rect.height)
+        self.time = charTime
+        self.charTime = charTime
+
+    def update(self,dt):
+        self.time -= dt
+        if self.time <= 0.0:
+            self.time += self.charTime
+            self.expandNext()
+
+    def expandNext(self):
+        self.actor.area.width += self.actor.fontWidth
+        if self.actor.area.width >= self.actor.rect.width:
+            self.markForDestroy = True
+
+    def destroy(self):
+        self.actor.area.width = self.actor.rect.width
+            
 #----------------------------------------------------------------------
 class BhDestroyActor(Behavior):
     def __init__(self,actor,timeSec=0.0):
@@ -814,35 +855,8 @@ class AcScene(Actor):
         #self.camWsX = max(self.camWsX,self.vrHalfX)         
 
     def draw(self):
-        self.drawLayers()
+        self.drawLayers()        
         super(AcScene,self).draw()
-        
-        # gui backg
-        h = (self.vrTh-1)*self.th
-        r = Rect(0,h,(self.vrTw-1)*self.tw,Engine.instance.virtualRes[1]-h)        
-        #(30,30,160)
-        pygame.draw.rect(self.engine.SCREENVIRTUAL,(0,0,51),r)
-        pygame.draw.rect(self.engine.SCREENVIRTUAL,(200,200,200),r,1)
-        
-        # status
-        r.width = 168
-        r.left = 5
-        r.height = 56
-        r.top += 4
-        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(20,20,20),r)
-        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(0,0,0),r,1)
-
-        # char thumb
-        r.left = r.right+4
-        r.width = 60
-        pygame.draw.rect(self.engine.SCREENVIRTUAL,(20,20,20),r)
-        pygame.draw.rect(self.engine.SCREENVIRTUAL,(200,200,200),r,1)
-
-        # conversation text
-        #r.left = r.right+4
-        #r.width= 480-1-4-r.left
-        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(20,20,20),r)
-        #pygame.draw.rect(self.engine.SCREENVIRTUAL,(0,0,0),r,1)
         
 
     def fromWsToSs(self,wsX,wsY):
@@ -981,22 +995,43 @@ class BhSprite(Behavior):
             self.setAnim(data)
 
 #----------------------------------------------------------------------
-class BEHAVIORS:
-    engine = None
+class AcTextScroller(Actor):
+    def __init__(self,engine,topleft,fontname,fontsize,lines,paddH=3):
+        super(AcTextScroller,self).__init__(engine)
+        self.lineActors = []
+        Engine.textScroller = self
+        x, y = topleft
+        for l in lines:
+            a = Actor(engine)
+            a.addBehavior(BhText(a,l,(x,y),fontname,fontsize))
+            a.addBehavior(BhBlit(a))
+            a.addBehavior(BhTextExpandAnim(a))
+            self.lineActors += [a]
+            y += a.rect.height + paddH
+        self.curLine = 0
 
-    @staticmethod
-    def createText(text,topleft,fontname="Pxlvetica.ttf",size=16):
-        assert BEHAVIORS.engine, "Engine not initialized"
-        a = Actor(BEHAVIORS.engine)
-        a.addBehavior(BhText(a,text,topleft,fontname,size))
-        '''a.addBehavior(BhSequence(a,
-          [
-           BhMoveTo(a,(100,200),3.0), 
-           BhMoveTo(a,(100,300),3.0) ]) )
-           #,BhDestroyActor(a,10)]))
-        '''
-        a.addBehavior(BhBlit(a,False))
-        BEHAVIORS.engine.addActor(a)
-        return a.rect.height
-        
+    def update(self,dt):
+        for i in range(0,self.curLine+1):
+            self.lineActors[i].update(dt)
+        # check if advance to next line
+        if self.curLine<len(self.lineActors)-1:
+            ca = self.lineActors[self.curLine]
+            if not any(isinstance(x, BhTextExpandAnim) for x in ca.behaviors):
+                self.curLine+=1
+        super(AcTextScroller,self).update(dt)
 
+    def draw(self):
+        for i in range(0,self.curLine+1):
+            self.lineActors[i].draw()
+        super(AcTextScroller,self).draw()
+
+    def endScroll(self):
+        for a in self.lineActors:
+            for b in a.behaviors:
+                if isinstance(b,BhTextExpandAnim):
+                    b.markForDestroy = True
+
+    def keyUp(self, key):
+        super(AcTextScroller, self).keyUp(key)
+        if key == K_a:
+            self.endScroll()

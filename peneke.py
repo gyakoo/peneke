@@ -1,6 +1,10 @@
 '''
 Copyright (c) 2016 gyakoo
 '''
+import sys
+reload(sys)
+sys.setdefaultencoding("utf8")
+
 import os, pygame, copy
 import math, random
 from pygame.locals import *
@@ -26,7 +30,6 @@ class TestActor(engine.Actor):
         r.topleft = (400,200)
         engine.HELPER.blitAlpha(self.engine.SCREENVIRTUAL,self.a,(40,20),int(self.alpha))
         engine.HELPER.drawRect((10,10,24,24), (0,255,0,255))
-
 
 # --------------------------------------------------------
 class BhPlayerPlatformer(engine.Behavior):
@@ -148,6 +151,34 @@ class BhPlayerPlatformer(engine.Behavior):
             self.startFalling()
 
 # --------------------------------------------------------
+class BhGUI(engine.Behavior):
+    def __init__(self):
+        assert engine.Engine.scene
+        super(BhGUI,self).__init__(engine.Engine.scene)
+    
+    def update(self,dt): None
+
+    def draw(self):
+        r = Rect(0,256,480,64)
+        engine.HELPER.drawRect(r,(0,0,51))
+        engine.HELPER.drawRect(r,(200,200,200),1)        
+        
+        # status
+        r.width = 168
+        r.left = 5
+        r.height = 56
+        r.top += 4
+
+        # char thumb
+        r.left = r.right+4
+        r.width = 60
+        engine.HELPER.drawRect(r,(20,20,20))
+        engine.HELPER.drawRect(r,(200,200,200),1)
+
+        
+    def message(self,id,data): None
+
+# --------------------------------------------------------
 def placeInTile(a,tx,ty):
     r = engine.Engine.scene.fromTsToTileRect(tx,ty)
     a.rect.left = r[0]
@@ -182,6 +213,7 @@ if __name__ == '__main__':
     engineObj.showFPS = True
 
     sceneActor = engine.AcScene("data/test02.tmx",engineObj,sceneTiles)
+    sceneActor.addBehavior( BhGUI() )
 
     # SPRITE
     spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,tileSize,colorKey)
@@ -216,13 +248,11 @@ if __name__ == '__main__':
     # SCENE
     engineObj.addActor( sceneActor )
 
-    x, y = 246, 260
-    # max 29 chars width
-    y += engine.BEHAVIORS.createText("Lorem ipsum dolor sit amet,",(x,y), "PressStart2P.ttf", 8)+3
-    y += engine.BEHAVIORS.createText("consectetur adipiscing elit.",(x,y), "PressStart2P.ttf", 8)+3
-    y += engine.BEHAVIORS.createText("Nulla porta elit erat, vitae",(x,y), "PressStart2P.ttf", 8)+3
-    y += engine.BEHAVIORS.createText("rhoncus odio aliquam nec.",(x,y), "PressStart2P.ttf", 8)+3
-    y += engine.BEHAVIORS.createText("Ut at convallis nisl.",(x,y), "PressStart2P.ttf", 8)+3
+#    txt = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla porta elit erat, vitae rhoncus odio aliquam nec. Ut at convallis nisl."
+    txt = "Hola amigo, te preguntarás ¿qué demonios estoy haciendo con este proyecto? pues bien te lo contaré, pero antes una pausa que refresca. Beba cocaloca, un refresco de calidad"
+    txt = txt.encode("latin-1")
+    lines = engine.HELPER.paragraphIntoLines(txt,28,5)
+    engineObj.addActor( engine.AcTextScroller(engineObj,(246,260),"PressStart2P.ttf",8,lines) )    
     
     # Main loop
     engineObj.run()

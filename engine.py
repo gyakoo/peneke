@@ -105,6 +105,39 @@ class HELPER:
         return target
 
     @staticmethod
+    def surfaceFlipXWithAnimRects(img,animFile):
+        r = img.get_rect()
+        ckey = img.get_colorkey()
+        img.set_colorkey(None)
+        target = pygame.Surface( r.size, 0, img )
+        target.set_palette(img.get_palette())
+
+        # load anim to get the rects
+        done = {}
+        path = Engine.instance.pathToAnims+animFile
+        with open(path,'r') as file:
+            try:
+                allanims = eval(file.read())
+            except:
+                print "ERR - Cannot eval anim:", name
+                return
+            
+            for k0,v0 in allanims.iteritems():
+                for k1,v1 in v0.iteritems():
+                    for tlwh in v1[0]:
+                        if not done.has_key(tlwh):
+                            tmp = pygame.Surface( tlwh[1], 0, img)
+                            tmp.set_palette(img.get_palette())        
+                            dst = Rect( tlwh[0], tlwh[1])                        
+                            tmp.blit(img, Rect((0,0),dst.size), dst)
+                            tmp = pygame.transform.flip(tmp,True,False)
+                            target.blit(tmp,dst)
+                            done[tlwh]=1
+            target.set_colorkey(ckey)
+            img.set_colorkey(ckey)
+        return target
+
+    @staticmethod
     def blitAlpha(target, source, location, opacity, area=None):
         raise NotImplementedError("Not implementd")
         #x, y = location
@@ -512,6 +545,18 @@ class Engine:
             if img:
                 w,h = size
                 target = HELPER.surfaceFlipX(img,w,h)
+            self.IMAGECACHE[key] = target
+        return self.IMAGECACHE[key]
+
+    def loadImageFlipXWithAnimRects(self,file,animFile):
+        '''Loads and caches a flipped image per rects indicated by animFile'''
+        flipname = file + "_fx"
+        key = (flipname,0,False,False)
+        if not self.IMAGECACHE.has_key(key):
+            img = self.loadImage(file)
+            target = None
+            if img:                
+                target = HELPER.surfaceFlipXWithAnimRects(img,animFile)
             self.IMAGECACHE[key] = target
         return self.IMAGECACHE[key]
         
@@ -953,13 +998,16 @@ class AcScene(Actor):
 
 # --------------------------------------------------------
 class SpriteSheet:
-    def __init__(self,imgName,createFlipX,tilesize,colorkey=None):
+    def __init__(self,imgName,createFlipX,tilesizeOrAnim,colorkey=None):
         self.img, self.imgFlipX = None, None
         self.img = Engine.instance.loadImage(imgName)
         if self.img:
             self.img.set_colorkey(colorkey)
         if createFlipX and self.img:
-            self.imgFlipX = Engine.instance.loadImageFlipX(imgName,tilesize)            
+            if isinstance(tilesizeOrAnim,tuple):
+                self.imgFlipX = Engine.instance.loadImageFlipX(imgName,tilesize)
+            else:
+                self.imgFlipX = Engine.instance.loadImageFlipXWithAnimRects(imgName,tilesizeOrAnim)
         
 # --------------------------------------------------------
 class BhSprite(Behavior):

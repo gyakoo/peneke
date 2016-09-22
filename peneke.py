@@ -191,6 +191,7 @@ def createSprite(spriteSheet, anim,animDef,tx,ty):
     actor = engine.Actor(engineObj)
     actor.addBehavior( engine.BhSprite(actor, spriteSheet, anim, animDef) )
     actor.addBehavior( engine.BhBlit(actor,True) )
+    actor.flipX = True
     placeInTile(actor,tx,ty)
     return actor
 
@@ -219,7 +220,7 @@ if __name__ == '__main__':
     sceneActor.addBehavior( BhGUI() )
 
     # SPRITE
-    spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,tileSize,colorKey)
+    spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,"characters.anim",colorKey)
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayerPlatformer(spriteActor,playerSize) )
     spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "characters.anim@pepe" ) )

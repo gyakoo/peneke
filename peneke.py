@@ -33,14 +33,13 @@ class TestActor(engine.Actor):
 
 # --------------------------------------------------------
 class BhPlayerPlatformer(engine.Behavior):
-    MAXVY = 6.0
+    MAXVY = 3.0
     JUMPTIME = 0.25
-    PLCOLLWIDTH, PLCOLLHEIGHT = 14,14
     VX = 150.0 # if >=125 then moves 2 pixels per frame
-    def __init__(self,actor, size):
+    def __init__(self,actor, size, collsize=(14,14)):
         super(BhPlayerPlatformer,self).__init__(actor)        
         self.actor.rect.size = size
-        self.actor.crect = Rect( engine.Engine.scene.getInitSpawn(), (BhPlayerPlatformer.PLCOLLWIDTH,BhPlayerPlatformer.PLCOLLHEIGHT) )
+        self.actor.crect = Rect( engine.Engine.scene.getInitSpawn(), collsize )
         self.vx, self.vy = 0.0, 0.0
         self.t = 0.0
         self.jumping = BhPlayerPlatformer.JUMPTIME
@@ -88,7 +87,7 @@ class BhPlayerPlatformer(engine.Behavior):
         inAir = falling
         if falling:
             # gravity
-            self.vy += 5.0*self.t
+            self.vy += 1.0*self.t
             self.vy = min(self.vy, BhPlayerPlatformer.MAXVY)
             downMov = self.vy*self.t + self.t*self.t
             c, newRect = engine.HELPER.raycastDown(self.actor.crect,max(1,downMov))
@@ -149,6 +148,10 @@ class BhPlayerPlatformer(engine.Behavior):
         elif key == pygame.K_v:
             self.actor.crect.top -= 70
             self.startFalling()
+        elif key == pygame.K_s:
+            self.actor.message("ANIMFILE", "characters.anim@pepesuit")
+        elif key == pygame.K_d:
+            self.actor.message("ANIMFILE", "characters.anim@pepe")
 
 # --------------------------------------------------------
 class BhGUI(engine.Behavior):
@@ -219,7 +222,7 @@ if __name__ == '__main__':
     spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,tileSize,colorKey)
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayerPlatformer(spriteActor,playerSize) )
-    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "characters.anim@slug" ) )
+    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "characters.anim@pepe" ) )
     spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
     engineObj.addActor( spriteActor )
        

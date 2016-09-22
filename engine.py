@@ -478,6 +478,10 @@ class Engine:
             ss = self.SCRATCHSURFCACHE[dim]
         return ss
     
+    def reloadImageCache(self):
+        for k,v in self.IMAGECACHE:
+            print k
+
     def loadImage(self,file, rotation = 0, flipx = False, flipy = False):
         '''Loads and caches an image handle'''
         key = (file, rotation, flipx, flipy)
@@ -577,6 +581,8 @@ class Engine:
                         Engine.debug = not Engine.debug
                     elif event.key == pygame.K_F2:
                         self.setFullscreen( not self.fullscreen )
+                    elif event.key == pygame.K_F3:
+                        Engine.instance.reloadImageCache()
                     for a in self.actors: 
                         a.keyUp(event.key)
                         
@@ -971,8 +977,8 @@ class BhSprite(Behavior):
         if isSizeZero and self.actor.area and self.actor.areaIndex >= 0:
             self.actor.rect.size = self.actor.area[self.actor.areaIndex][1]
 
-    def setAnim(self,name):      
-        if name==self.curAnim: return
+    def setAnim(self,name,force=False):      
+        if name==self.curAnim and not force: return
         if name in self.actor.anim:
             animtuple = self.actor.anim[name]
             self.actor.area = animtuple[0]
@@ -984,6 +990,9 @@ class BhSprite(Behavior):
             self.t = self.period
             self.curAnim = name
 
+    def setAnimFile(self,animName):
+        self.actor.anim = self.actor.engine.loadAnim(animName)
+
     def update(self,dt):
         self.t -= dt
         if self.t <= 0.0:
@@ -993,6 +1002,9 @@ class BhSprite(Behavior):
     def message(self,id,data):
         if id == "ANIM":
             self.setAnim(data)
+        elif id== "ANIMFILE":
+            self.setAnimFile(data)
+            self.setAnim(self.curAnim,True)
 
 #----------------------------------------------------------------------
 class AcTextScroller(Actor):

@@ -221,6 +221,8 @@ if __name__ == '__main__':
 
     # SPRITE
     spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,"characters.anim",colorKey)
+    engineObj.setPalette(spriteSheet.img.get_palette())
+    engineObj.setBackgroundColor(240)
     spriteActor = engine.Actor(engineObj)
     spriteActor.addBehavior( BhPlayerPlatformer(spriteActor,playerSize) )
     spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "characters.anim@pepe" ) )
@@ -247,6 +249,8 @@ if __name__ == '__main__':
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@babosa","walk",58,14) )
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@mosquito","fly",60,10) )
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@carawood","walk",54,11) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@spaceship","idle",28,8) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@robot","idle",21,6) )
 
     # ------------------------------------------------------------
     # SCENE

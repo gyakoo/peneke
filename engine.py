@@ -110,7 +110,8 @@ class HELPER:
         ckey = img.get_colorkey()
         img.set_colorkey(None)
         target = pygame.Surface( r.size, 0, img )
-        target.set_palette(img.get_palette())
+        p = img.get_palette()
+        target.set_palette(p)
 
         # load anim to get the rects
         done = {}
@@ -135,6 +136,8 @@ class HELPER:
                             done[tlwh]=1
             target.set_colorkey(ckey)
             img.set_colorkey(ckey)
+        gc.collect()
+        gc.collect()
         return target
 
     @staticmethod
@@ -371,6 +374,7 @@ class Engine:
         self.KEYPRESSED = None
         self.fullscreen = fullscreen
         flags = pygame.DOUBLEBUF
+        self.palette = None
         if fullscreen: 
             flags = flags | pygame.FULLSCREEN | pygame.HWSURFACE
         bestdepth = pygame.display.mode_ok(self.physicalRes, flags, depth)
@@ -391,7 +395,7 @@ class Engine:
         self.pathToImages= "data/images/"
         self.pathToAnims = "data/anims/"
         self.imageExtensions = ["", ".png", ".bmp", ".gif"]
-        self.bgColor = (0,0,0)
+        self.bgColor = 0
         Engine.instance = self
         if fullscreen:
             pygame.mouse.set_visible(0)
@@ -399,6 +403,21 @@ class Engine:
                 self.fullscreenTopleft = (pres[0]/2-vres[0], pres[1]/2-vres[1])
             else:
                 self.fullscreenTopleft = (pres[0]/2-vres[0]/2, pres[1]/2-vres[1]/2)
+
+    def setBackgroundColor(self,color):
+        if isinstance(color,tuple):
+            self.bgColor = color
+        elif self.palette:
+            self.bgColor = self.palette[color]
+
+    def setPalette(self,pal):
+        self.palette = pal
+        if not pal: return
+        surfs = [self.SCREENBUFFER, self.SCREENVIRTUAL, self.SCREENVIRTUALX2]
+        for s in surfs:
+            if s and s.get_bitsize() == 8:
+                s.set_palette(pal)
+
 
     def setFullscreen(self,fs):
         if fs == self.fullscreen: return
@@ -425,6 +444,7 @@ class Engine:
                 self.fullscreenTopleft = (pres[0]/2-vres[0], pres[1]/2-vres[1])
             else:
                 self.fullscreenTopleft = (pres[0]/2-vres[0]/2, pres[1]/2-vres[1]/2)
+        self.setPalette(self.palette)
         gc.collect()
         gc.collect()        
 

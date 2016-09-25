@@ -251,6 +251,7 @@ if __name__ == '__main__':
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@carawood","walk",54,11) )
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@spaceship","idle",28,8) )
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@robot","idle",21,6) )
+    engineObj.addActor( createSprite(spriteSheet,"characters.anim@johnny","idle",25,6) )
 
     # ------------------------------------------------------------
     # SCENE

@@ -187,13 +187,35 @@ def placeInTile(a,tx,ty):
     a.rect.left = r[0]
     a.rect.bottom = r[1]+16
 
+# --------------------------------------------------------
 def createSprite(spriteSheet, anim,animDef,tx,ty):
-    actor = engine.Actor(engineObj)
+    actor = engine.Actor(engine.Engine.instance)
     actor.addBehavior( engine.BhSprite(actor, spriteSheet, anim, animDef) )
     actor.addBehavior( engine.BhBlit(actor,True) )
-    actor.flipX = True
+    #actor.flipX = True
     placeInTile(actor,tx,ty)
     return actor
+
+# --------------------------------------------------------
+class BhCigar(engine.Behavior):
+    def __init__(self,pepeAc,spriteSheet):
+        self.parentPepe = pepeAc
+        self.cigarActor = engine.Actor(engine.Engine.instance)
+        super(BhCigar,self).__init__(self.cigarActor)
+        self.cigarActor.addBehavior( engine.BhSprite(self.cigarActor, spriteSheet, "characters.anim@cigar","idle") )
+        self.cigarActor.addBehavior( engine.BhBlit(self.cigarActor,True) )
+
+    def update(self,dt):
+        self.cigarActor.flipX = self.parentPepe.flipX
+        if self.parentPepe.flipX:
+            self.cigarActor.rect.bottomright= (self.parentPepe.rect.left+1, self.parentPepe.rect.top+8)
+        else:
+            self.cigarActor.rect.bottomleft = (self.parentPepe.rect.right-1, self.parentPepe.rect.top+8)
+        self.cigarActor.update(dt)
+
+    def draw(self):
+        self.cigarActor.draw()
+        
 
 # --------------------------------------------------------
 # Entry point, only when executed, not imported
@@ -219,21 +241,22 @@ if __name__ == '__main__':
     sceneActor = engine.AcScene("data/test02.tmx",engineObj,sceneTiles)
     sceneActor.addBehavior( BhGUI() )
 
-    # SPRITE
+    # SPRITE and PEPE
     spriteSheet = engine.SpriteSheet("tilesetchar256.png",True,"characters.anim",colorKey)
     engineObj.setPalette(spriteSheet.img.get_palette())
     engineObj.setBackgroundColor(240)
-    spriteActor = engine.Actor(engineObj)
-    spriteActor.addBehavior( BhPlayerPlatformer(spriteActor,playerSize) )
-    spriteActor.addBehavior( engine.BhSprite(spriteActor, spriteSheet, "characters.anim@pepe" ) )
-    spriteActor.addBehavior( engine.BhBlit(spriteActor, True) )
-    engineObj.addActor( spriteActor )
+    pepe = engine.Actor(engineObj)
+    pepe.addBehavior( BhPlayerPlatformer(pepe,playerSize) )
+    pepe.addBehavior( engine.BhSprite(pepe, spriteSheet, "characters.anim@pepe" ) )
+    pepe.addBehavior( engine.BhBlit(pepe, True) )
+    pepe.addBehavior( BhCigar(pepe,spriteSheet) )
+    engineObj.addActor( pepe )
        
 
     # scene follow camera
-    sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,spriteActor,True) )
+    sceneActor.addBehavior( engine.BhSceneCameraFollowActor(sceneActor,pepe,True) )
     #sceneActor.addBehavior( engine.BhSceneCameraScrollByInput(sceneActor) )
-    sceneActor.tgtCamWsX, sceneActor.tgtCamWsY = spriteActor.rect.topleft
+    sceneActor.tgtCamWsX, sceneActor.tgtCamWsY = pepe.rect.topleft
     
     # TESTING
     # ------------------------------------------------------------
@@ -252,6 +275,7 @@ if __name__ == '__main__':
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@spaceship","idle",28,8) )
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@robot","idle",21,6) )
     engineObj.addActor( createSprite(spriteSheet,"characters.anim@johnny","idle",25,6) )
+    
 
     # ------------------------------------------------------------
     # SCENE

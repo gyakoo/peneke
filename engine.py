@@ -464,6 +464,7 @@ class Engine:
                 self.actors.append(_a)
         else:
             self.actors.append(a)
+        return a
 
     def destroy(self):        
         '''Deinit the engine'''
